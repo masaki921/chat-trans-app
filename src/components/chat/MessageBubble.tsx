@@ -1,4 +1,5 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { MessageWithSender } from '../../types/chat';
 import { colors, typography, spacing } from '../../theme';
 import { formatMessageTime } from '../../utils/formatDate';
@@ -8,12 +9,14 @@ type Props = {
   message: MessageWithSender;
   isOwn: boolean;
   userLanguage: string;
+  onImagePress?: (uri: string) => void;
 };
 
-export function MessageBubble({ message, isOwn, userLanguage }: Props) {
+export function MessageBubble({ message, isOwn, userLanguage, onImagePress }: Props) {
   const needsTranslation = message.original_language !== userLanguage;
   const translatedText = message.translations?.[userLanguage];
   const time = formatMessageTime(message.created_at);
+  const isImage = message.type === 'image' && message.media_url;
 
   return (
     <View style={[styles.container, isOwn ? styles.containerOwn : styles.containerOther]}>
@@ -21,33 +24,46 @@ export function MessageBubble({ message, isOwn, userLanguage }: Props) {
         style={[
           styles.bubble,
           isOwn ? styles.bubbleOwn : styles.bubbleOther,
+          isImage && styles.bubbleImage,
         ]}
       >
-        {/* メインテキスト */}
-        {isOwn ? (
-          <>
-            {/* 自分: 原文がメイン */}
-            <Text style={[styles.mainText, styles.mainTextOwn]}>
-              {message.content}
-            </Text>
-            {/* 自分の送信に翻訳がある場合、翻訳を小さく表示 */}
-            {needsTranslation && translatedText && (
-              <Text style={[styles.subText, styles.subTextOwn]}>
-                {translatedText}
-              </Text>
-            )}
-          </>
+        {isImage ? (
+          <Pressable onPress={() => onImagePress?.(message.media_url!)}>
+            <Image
+              source={{ uri: message.media_url! }}
+              style={styles.image}
+              contentFit="cover"
+            />
+          </Pressable>
         ) : (
           <>
-            {/* 相手: 翻訳があればそれがメイン、なければ原文 */}
-            <Text style={[styles.mainText, styles.mainTextOther]}>
-              {needsTranslation && translatedText ? translatedText : message.content}
-            </Text>
-            {/* 翻訳されたメッセージは原文を小さく表示 */}
-            {needsTranslation && translatedText && (
-              <Text style={[styles.subText, styles.subTextOther]}>
-                {message.content}
-              </Text>
+            {/* メインテキスト */}
+            {isOwn ? (
+              <>
+                {/* 自分: 原文がメイン */}
+                <Text style={[styles.mainText, styles.mainTextOwn]}>
+                  {message.content}
+                </Text>
+                {/* 自分の送信に翻訳がある場合、翻訳を小さく表示 */}
+                {needsTranslation && translatedText && (
+                  <Text style={[styles.subText, styles.subTextOwn]}>
+                    {translatedText}
+                  </Text>
+                )}
+              </>
+            ) : (
+              <>
+                {/* 相手: 翻訳があればそれがメイン、なければ原文 */}
+                <Text style={[styles.mainText, styles.mainTextOther]}>
+                  {needsTranslation && translatedText ? translatedText : message.content}
+                </Text>
+                {/* 翻訳されたメッセージは原文を小さく表示 */}
+                {needsTranslation && translatedText && (
+                  <Text style={[styles.subText, styles.subTextOther]}>
+                    {message.content}
+                  </Text>
+                )}
+              </>
             )}
           </>
         )}
@@ -86,6 +102,16 @@ const styles = StyleSheet.create({
   bubbleOther: {
     backgroundColor: colors.theirBubble,
     borderBottomLeftRadius: 4,
+  },
+  bubbleImage: {
+    paddingHorizontal: 4,
+    paddingTop: 4,
+    overflow: 'hidden',
+  },
+  image: {
+    width: 200,
+    height: 200,
+    borderRadius: BUBBLE_BORDER_RADIUS - 4,
   },
   mainText: {
     ...typography.bubbleText,

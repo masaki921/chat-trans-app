@@ -6,9 +6,10 @@ import { MAX_MESSAGE_LENGTH } from '../../utils/constants';
 
 type Props = {
   onSend: (text: string) => void;
+  onAttach?: () => void;
 };
 
-export function ChatInputBar({ onSend }: Props) {
+export function ChatInputBar({ onSend, onAttach }: Props) {
   const [text, setText] = useState('');
 
   const handleSend = () => {
@@ -19,7 +20,7 @@ export function ChatInputBar({ onSend }: Props) {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.attachButton}>
+      <Pressable style={styles.attachButton} onPress={onAttach}>
         <Ionicons name="attach" size={24} color={colors.subText} />
       </Pressable>
 

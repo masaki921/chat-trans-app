@@ -8,30 +8,47 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { colors, typography, spacing } from '../../src/theme';
 import { getDeviceLanguage } from '../../src/utils/languages';
+import { useAvatarPicker } from '../../src/hooks/useAvatarPicker';
 
 export default function RegisterStep2Screen() {
   const router = useRouter();
-  const { updateProfile, isLoading } = useAuthStore();
+  const { user, updateProfile, isLoading } = useAuthStore();
   const [displayName, setDisplayName] = useState('');
+  const { avatarUri, isUploading, showPicker, uploadLocalAvatar } =
+    useAvatarPicker({ localOnly: true });
 
   const handleComplete = async () => {
     if (!displayName.trim()) {
       Alert.alert('エラー', '表示名を入力してください');
       return;
     }
+    if (!user) return;
 
     const primaryLanguage = getDeviceLanguage();
 
-    const { error } = await updateProfile({
+    // アバターがあればアップロード
+    let avatarUrl: string | null = null;
+    if (avatarUri) {
+      avatarUrl = await uploadLocalAvatar(user.id);
+    }
+
+    const updates: Record<string, unknown> = {
       display_name: displayName.trim(),
       primary_language: primaryLanguage,
-    });
+    };
+    if (avatarUrl) {
+      updates.avatar_url = avatarUrl;
+    }
+
+    const { error } = await updateProfile(updates);
 
     if (error) {
       Alert.alert('エラー', error.message);
@@ -40,6 +57,8 @@ export default function RegisterStep2Screen() {
 
     router.replace('/(tabs)/chats');
   };
+
+  const busy = isLoading || isUploading;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -52,8 +71,24 @@ export default function RegisterStep2Screen() {
           <Text style={styles.step}>ステップ 2 / 2</Text>
 
           <View style={styles.avatarArea}>
-            <Pressable style={styles.avatarPlaceholder}>
-              <Text style={styles.avatarIcon}>📷</Text>
+            <Pressable
+              style={styles.avatarPlaceholder}
+              onPress={showPicker}
+            >
+              {avatarUri ? (
+                <Image
+                  source={{ uri: avatarUri }}
+                  style={styles.avatarImage}
+                  contentFit="cover"
+                />
+              ) : (
+                <Text style={styles.avatarIcon}>📷</Text>
+              )}
+              {isUploading && (
+                <View style={styles.avatarOverlay}>
+                  <ActivityIndicator color={colors.white} />
+                </View>
+              )}
             </Pressable>
             <Text style={styles.avatarHint}>タップして写真を追加</Text>
           </View>
@@ -72,12 +107,12 @@ export default function RegisterStep2Screen() {
           <Text style={styles.hint}>あとから変更できます</Text>
 
           <Pressable
-            style={[styles.button, isLoading && styles.buttonDisabled]}
+            style={[styles.button, busy && styles.buttonDisabled]}
             onPress={handleComplete}
-            disabled={isLoading}
+            disabled={busy}
           >
             <Text style={styles.buttonText}>
-              {isLoading ? '設定中...' : '始める →'}
+              {busy ? '設定中...' : '始める →'}
             </Text>
           </Pressable>
         </View>
@@ -122,6 +157,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.sm,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   avatarIcon: {
     fontSize: 28,

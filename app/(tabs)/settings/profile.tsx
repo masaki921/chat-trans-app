@@ -6,12 +6,15 @@ import {
   StyleSheet,
   Pressable,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
+import { Avatar } from '../../../src/components/shared/Avatar';
+import { useAvatarPicker } from '../../../src/hooks/useAvatarPicker';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -20,6 +23,7 @@ export default function ProfileScreen() {
   const [statusMessage, setStatusMessage] = useState(
     profile?.status_message ?? ''
   );
+  const { avatarUri, isUploading, showPicker } = useAvatarPicker();
 
   const handleSave = async () => {
     if (!displayName.trim()) {
@@ -39,6 +43,8 @@ export default function ProfileScreen() {
     }
   };
 
+  const currentAvatarUri = avatarUri ?? profile?.avatar_url;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
@@ -53,12 +59,19 @@ export default function ProfileScreen() {
 
       <View style={styles.content}>
         <View style={styles.avatarArea}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {displayName.charAt(0) || '?'}
-            </Text>
-          </View>
-          <Pressable>
+          <Pressable onPress={showPicker} style={styles.avatarPressable}>
+            <Avatar
+              uri={currentAvatarUri}
+              name={displayName}
+              size={80}
+            />
+            {isUploading && (
+              <View style={styles.avatarOverlay}>
+                <ActivityIndicator color={colors.white} />
+              </View>
+            )}
+          </Pressable>
+          <Pressable onPress={showPicker}>
             <Text style={styles.changePhotoText}>写真を変更</Text>
           </Pressable>
         </View>
@@ -119,19 +132,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  avatar: {
-    width: 80,
-    height: 80,
+  avatarPressable: {
+    marginBottom: spacing.sm,
     borderRadius: 40,
-    backgroundColor: colors.primary,
+    overflow: 'hidden',
+  },
+  avatarOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  avatarText: {
-    fontSize: 28,
-    fontWeight: '600',
-    color: colors.white,
+    borderRadius: 40,
   },
   changePhotoText: {
     color: colors.primary,

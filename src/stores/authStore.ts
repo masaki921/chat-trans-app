@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { Profile } from '../types/database';
 import { supabase } from '../services/supabase';
+import { unregisterPushToken } from '../services/notifications';
 
 type AuthState = {
   session: Session | null;
@@ -78,6 +79,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signOut: async () => {
+    const user = get().user;
+    if (user) {
+      await unregisterPushToken(user.id);
+    }
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
   },

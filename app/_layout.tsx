@@ -6,6 +6,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../src/stores/authStore';
 import { useOnlineStatus } from '../src/hooks/useOnlineStatus';
+import { useNotifications } from '../src/hooks/useNotifications';
 import { colors } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
@@ -16,6 +17,7 @@ export default function RootLayout() {
   const router = useRouter();
 
   useOnlineStatus();
+  useNotifications();
 
   useEffect(() => {
     initialize();

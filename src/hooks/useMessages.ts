@@ -4,6 +4,14 @@ import { useChatStore } from '../stores/chatStore';
 import { useAuthStore } from '../stores/authStore';
 import { MessageWithSender } from '../types/chat';
 import { Message } from '../types/database';
+import { uploadImage } from '../utils/imageUpload';
+
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
 
 export function useMessages(conversationId: string) {
   const { currentMessages, setCurrentMessages, addMessage, updateMessageTranslations } =
@@ -106,14 +114,7 @@ export function useMessages(conversationId: string) {
     async (content: string) => {
       if (!user || !profile || !content.trim()) return;
 
-      const messageId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-        /[xy]/g,
-        (c) => {
-          const r = (Math.random() * 16) | 0;
-          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-        }
-      );
-
+      const messageId = generateUUID();
       const now = new Date().toISOString();
       const trimmedContent = content.trim();
 
@@ -156,7 +157,63 @@ export function useMessages(conversationId: string) {
     [user, profile, conversationId]
   );
 
-  return { messages: currentMessages, sendMessage, refetch: fetchMessages };
+  // 画像送信
+  const sendImage = useCallback(
+    async (imageUri: string) => {
+      if (!user || !profile) return;
+
+      const messageId = generateUUID();
+      const now = new Date().toISOString();
+
+      // Storageにアップロード
+      const publicUrl = await uploadImage(
+        'chat-images',
+        `${conversationId}/${messageId}`,
+        imageUri
+      );
+
+      if (!publicUrl) {
+        console.error('Image upload failed');
+        return;
+      }
+
+      // ローカルに即座に追加（楽観的更新）
+      const localMessage: MessageWithSender = {
+        id: messageId,
+        conversation_id: conversationId,
+        sender_id: user.id,
+        type: 'image',
+        content: '',
+        media_url: publicUrl,
+        original_language: profile.primary_language,
+        translations: null,
+        read_by: [],
+        created_at: now,
+        sender: profile,
+      };
+      addMessage(localMessage);
+
+      // DBにinsert
+      const { error } = await supabase
+        .from('messages')
+        .insert({
+          id: messageId,
+          conversation_id: conversationId,
+          sender_id: user.id,
+          type: 'image',
+          content: '',
+          media_url: publicUrl,
+          original_language: profile.primary_language,
+        });
+
+      if (error) {
+        console.error('Image message send error:', error);
+      }
+    },
+    [user, profile, conversationId]
+  );
+
+  return { messages: currentMessages, sendMessage, sendImage, refetch: fetchMessages };
 }
 
 // 翻訳リクエスト（Edge Functionを呼び出し）

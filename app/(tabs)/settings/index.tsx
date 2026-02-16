@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
 import { getLanguageName } from '../../../src/utils/languages';
+import { Avatar } from '../../../src/components/shared/Avatar';
 
 type SettingsItem = {
   icon: keyof typeof Ionicons.glyphMap;
@@ -53,11 +54,11 @@ export default function SettingsScreen() {
       <ScrollView style={styles.scrollView}>
         {/* Profile card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {profile?.display_name?.charAt(0) ?? '?'}
-            </Text>
-          </View>
+          <Avatar
+            uri={profile?.avatar_url}
+            name={profile?.display_name ?? '?'}
+            size={56}
+          />
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>
               {profile?.display_name ?? '未設定'}
@@ -153,19 +154,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     marginBottom: spacing.md,
-  },
-  avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: colors.white,
   },
   profileInfo: {
     marginLeft: spacing.md,
