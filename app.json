@@ -1,0 +1,43 @@
+{
+  "expo": {
+    "name": "ChatTranslate",
+    "slug": "chat-translate-app",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "chat-translate",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FAFAF8"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.chattranslate.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#FAFAF8"
+      },
+      "edgeToEdgeEnabled": true,
+      "package": "com.chattranslate.app"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "3b623790-2907-449c-bc32-feb120afa066"
+      }
+    },
+    "owner": "masaki00"
+  }
+}
