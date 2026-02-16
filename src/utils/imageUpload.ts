@@ -1,4 +1,5 @@
 import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
 import { Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 
@@ -62,8 +63,9 @@ export async function uploadImage(
   uri: string
 ): Promise<string | null> {
   try {
-    const response = await fetch(uri);
-    const blob = await response.blob();
+    // expo-file-system の新API: File → ArrayBuffer（React Nativeで確実に動作）
+    const file = new File(uri);
+    const arrayBuffer = await file.arrayBuffer();
 
     // ファイル拡張子を取得
     const ext = uri.split('.').pop()?.toLowerCase() ?? 'jpg';
@@ -72,7 +74,7 @@ export async function uploadImage(
 
     const { error } = await supabase.storage
       .from(bucket)
-      .upload(fullPath, blob, {
+      .upload(fullPath, arrayBuffer, {
         contentType,
         upsert: true,
       });
