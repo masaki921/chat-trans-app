@@ -3,12 +3,14 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
-import { colors, typography, spacing } from '../../../src/theme';
+import { colors, spacing } from '../../../src/theme';
 import { SUPPORTED_LANGUAGES } from '../../../src/utils/languages';
+import { useI18n } from '../../../src/i18n';
 
 export default function LanguageSettingsScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useAuthStore();
+  const { t } = useI18n();
 
   const languages = Object.entries(SUPPORTED_LANGUAGES).map(([code, name]) => ({
     code,
@@ -26,7 +28,7 @@ export default function LanguageSettingsScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>言語設定</Text>
+        <Text style={styles.headerTitle}>{t.language_title}</Text>
         <View style={{ width: 24 }} />
       </View>
 

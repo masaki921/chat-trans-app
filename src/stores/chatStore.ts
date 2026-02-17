@@ -12,12 +12,13 @@ type ChatState = {
   addMessage: (message: MessageWithSender) => void;
   updateMessageTranslations: (messageId: string, translations: Record<string, string>) => void;
   removeMessage: (messageId: string) => void;
+  setLoadingConversations: (loading: boolean) => void;
 };
 
 export const useChatStore = create<ChatState>((set) => ({
   conversations: [],
   currentMessages: [],
-  isLoadingConversations: false,
+  isLoadingConversations: true,
   isLoadingMessages: false,
 
   setConversations: (conversations) => set({ conversations }),
@@ -25,9 +26,13 @@ export const useChatStore = create<ChatState>((set) => ({
   setCurrentMessages: (messages) => set({ currentMessages: messages }),
 
   addMessage: (message) =>
-    set((state) => ({
-      currentMessages: [...state.currentMessages, message],
-    })),
+    set((state) => {
+      // 重複チェック（楽観的更新 + Realtime INSERTの競合防止）
+      if (state.currentMessages.some((m) => m.id === message.id)) {
+        return state;
+      }
+      return { currentMessages: [...state.currentMessages, message] };
+    }),
 
   updateMessageTranslations: (messageId, translations) =>
     set((state) => ({
@@ -40,4 +45,6 @@ export const useChatStore = create<ChatState>((set) => ({
     set((state) => ({
       currentMessages: state.currentMessages.filter((msg) => msg.id !== messageId),
     })),
+
+  setLoadingConversations: (loading) => set({ isLoadingConversations: loading }),
 }));

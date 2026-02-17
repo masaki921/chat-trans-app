@@ -3,6 +3,7 @@ import { View, TextInput, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing } from '../../theme';
 import { MAX_MESSAGE_LENGTH } from '../../utils/constants';
+import { useI18n } from '../../i18n';
 
 type Props = {
   onSend: (text: string) => void;
@@ -11,6 +12,7 @@ type Props = {
 
 export function ChatInputBar({ onSend, onAttach }: Props) {
   const [text, setText] = useState('');
+  const { t } = useI18n();
 
   const handleSend = () => {
     if (!text.trim()) return;
@@ -20,22 +22,33 @@ export function ChatInputBar({ onSend, onAttach }: Props) {
 
   return (
     <View style={styles.container}>
-      <Pressable style={styles.attachButton} onPress={onAttach}>
+      <Pressable
+        style={styles.attachButton}
+        onPress={onAttach}
+        accessibilityLabel={t.chat_sendImage}
+        accessibilityRole="button"
+      >
         <Ionicons name="attach" size={24} color={colors.subText} />
       </Pressable>
 
       <TextInput
         style={styles.input}
-        placeholder="メッセージを入力..."
+        placeholder={t.chat_inputPlaceholder}
         placeholderTextColor={colors.subText}
         value={text}
         onChangeText={setText}
         multiline
         maxLength={MAX_MESSAGE_LENGTH}
+        accessibilityLabel={t.chat_inputPlaceholder}
       />
 
       {text.trim().length > 0 && (
-        <Pressable style={styles.sendButton} onPress={handleSend}>
+        <Pressable
+          style={styles.sendButton}
+          onPress={handleSend}
+          accessibilityLabel="Send"
+          accessibilityRole="button"
+        >
           <Ionicons name="arrow-up" size={20} color={colors.white} />
         </Pressable>
       )}

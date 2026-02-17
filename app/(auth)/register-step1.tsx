@@ -13,26 +13,28 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { colors, typography, spacing } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
 
 export default function RegisterStep1Screen() {
   const router = useRouter();
   const { signUp, isLoading } = useAuthStore();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleNext = async () => {
     if (!email.trim()) {
-      Alert.alert('エラー', 'メールアドレスを入力してください');
+      Alert.alert(t.error, t.register_emailRequired);
       return;
     }
     if (password.length < 6) {
-      Alert.alert('エラー', 'パスワードは6文字以上で入力してください');
+      Alert.alert(t.error, t.register_passwordLength);
       return;
     }
 
     const { error } = await signUp(email.trim(), password);
     if (error) {
-      Alert.alert('登録エラー', error.message);
+      Alert.alert(t.register_error, error.message);
       return;
     }
 
@@ -47,18 +49,18 @@ export default function RegisterStep1Screen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.backText}>← 戻る</Text>
+            <Text style={styles.backText}>{t.login_back}</Text>
           </Pressable>
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>アカウント作成</Text>
-          <Text style={styles.step}>ステップ 1 / 2</Text>
+          <Text style={styles.title}>{t.register_title}</Text>
+          <Text style={styles.step}>{t.register_step1}</Text>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="メールアドレス"
+              placeholder={t.register_email}
               placeholderTextColor={colors.subText}
               value={email}
               onChangeText={setEmail}
@@ -68,7 +70,7 @@ export default function RegisterStep1Screen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="パスワード（6文字以上）"
+              placeholder={t.register_password}
               placeholderTextColor={colors.subText}
               value={password}
               onChangeText={setPassword}
@@ -82,7 +84,7 @@ export default function RegisterStep1Screen() {
             disabled={isLoading}
           >
             <Text style={styles.buttonText}>
-              {isLoading ? '処理中...' : '次へ →'}
+              {isLoading ? t.register_loading : t.register_next}
             </Text>
           </Pressable>
         </View>

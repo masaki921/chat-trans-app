@@ -13,22 +13,24 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/stores/authStore';
 import { colors, typography, spacing } from '../../src/theme';
+import { useI18n } from '../../src/i18n';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { signIn, isLoading } = useAuthStore();
+  const { t } = useI18n();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert('エラー', 'メールアドレスとパスワードを入力してください');
+      Alert.alert(t.error, t.login_validation);
       return;
     }
 
     const { error } = await signIn(email.trim(), password);
     if (error) {
-      Alert.alert('ログインエラー', error.message);
+      Alert.alert(t.login_error, error.message);
     }
   };
 
@@ -40,31 +42,35 @@ export default function LoginScreen() {
       >
         <View style={styles.header}>
           <Pressable onPress={() => router.back()}>
-            <Text style={styles.backText}>← 戻る</Text>
+            <Text style={styles.backText}>{t.login_back}</Text>
           </Pressable>
         </View>
 
         <View style={styles.content}>
-          <Text style={styles.title}>ログイン</Text>
+          <Text style={styles.title}>{t.login_title}</Text>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="メールアドレス"
+              placeholder={t.login_email}
               placeholderTextColor={colors.subText}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
               autoCorrect={false}
+              accessibilityLabel={t.login_email}
+              textContentType="emailAddress"
             />
             <TextInput
               style={styles.input}
-              placeholder="パスワード"
+              placeholder={t.login_password}
               placeholderTextColor={colors.subText}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
+              accessibilityLabel={t.login_password}
+              textContentType="password"
             />
           </View>
 
@@ -72,9 +78,11 @@ export default function LoginScreen() {
             style={[styles.button, isLoading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={isLoading}
+            accessibilityRole="button"
+            accessibilityLabel={isLoading ? t.login_loading : t.login_button}
           >
             <Text style={styles.buttonText}>
-              {isLoading ? 'ログイン中...' : 'ログイン'}
+              {isLoading ? t.login_loading : t.login_button}
             </Text>
           </Pressable>
         </View>

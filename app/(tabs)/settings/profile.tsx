@@ -15,10 +15,12 @@ import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
 import { Avatar } from '../../../src/components/shared/Avatar';
 import { useAvatarPicker } from '../../../src/hooks/useAvatarPicker';
+import { useI18n } from '../../../src/i18n';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useAuthStore();
+  const { t } = useI18n();
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
   const [statusMessage, setStatusMessage] = useState(
     profile?.status_message ?? ''
@@ -27,7 +29,7 @@ export default function ProfileScreen() {
 
   const handleSave = async () => {
     if (!displayName.trim()) {
-      Alert.alert('エラー', '表示名を入力してください');
+      Alert.alert(t.error, t.profile_nameRequired);
       return;
     }
 
@@ -37,7 +39,7 @@ export default function ProfileScreen() {
     });
 
     if (error) {
-      Alert.alert('エラー', error.message);
+      Alert.alert(t.error, error.message);
     } else {
       router.back();
     }
@@ -51,9 +53,9 @@ export default function ProfileScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>プロフィール編集</Text>
+        <Text style={styles.headerTitle}>{t.profile_title}</Text>
         <Pressable onPress={handleSave}>
-          <Text style={styles.saveText}>保存</Text>
+          <Text style={styles.saveText}>{t.profile_save}</Text>
         </Pressable>
       </View>
 
@@ -72,26 +74,26 @@ export default function ProfileScreen() {
             )}
           </Pressable>
           <Pressable onPress={showPicker}>
-            <Text style={styles.changePhotoText}>写真を変更</Text>
+            <Text style={styles.changePhotoText}>{t.profile_changePhoto}</Text>
           </Pressable>
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>表示名</Text>
+          <Text style={styles.label}>{t.profile_displayName}</Text>
           <TextInput
             style={styles.input}
             value={displayName}
             onChangeText={setDisplayName}
-            placeholder="表示名"
+            placeholder={t.profile_displayName}
             placeholderTextColor={colors.subText}
           />
 
-          <Text style={styles.label}>ステータスメッセージ</Text>
+          <Text style={styles.label}>{t.profile_statusMessage}</Text>
           <TextInput
             style={styles.input}
             value={statusMessage}
             onChangeText={setStatusMessage}
-            placeholder="ステータスメッセージ（任意）"
+            placeholder={t.profile_statusPlaceholder}
             placeholderTextColor={colors.subText}
           />
         </View>

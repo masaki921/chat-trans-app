@@ -18,7 +18,10 @@
       "bundleIdentifier": "com.chattranslate.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
-        "UIBackgroundModes": ["remote-notification"]
+        "NSPhotoLibraryAddUsageDescription": "Save images to your photo library",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -27,7 +30,8 @@
         "backgroundColor": "#FAFAF8"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.chattranslate.app"
+      "package": "com.chattranslate.app",
+      "permissions": []
     },
     "plugins": [
       "expo-router",
@@ -35,8 +39,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "プロフィール写真やチャット画像の送信に使用します",
-          "cameraPermission": "プロフィール写真の撮影やチャット画像の送信に使用します"
+          "photosPermission": "Access photos to send in chat and set your profile picture",
+          "cameraPermission": "Take photos to send in chat and set your profile picture"
         }
       ],
       [
@@ -53,6 +57,12 @@
         "projectId": "3b623790-2907-449c-bc32-feb120afa066"
       }
     },
-    "owner": "masaki00"
+    "owner": "masaki00",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/3b623790-2907-449c-bc32-feb120afa066"
+    }
   }
 }

@@ -5,25 +5,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFriendships } from '../../../src/hooks/useFriendships';
 import { Avatar } from '../../../src/components/shared/Avatar';
 import { colors, typography, spacing } from '../../../src/theme';
+import { useI18n } from '../../../src/i18n';
 
 export default function FriendManageScreen() {
   const router = useRouter();
   const { friends, pendingRequests, acceptRequest, rejectRequest } = useFriendships();
+  const { t } = useI18n();
 
   const handleAccept = async (friendshipId: string) => {
     const { error } = await acceptRequest(friendshipId);
-    if (error) Alert.alert('エラー', error.message);
+    if (error) Alert.alert(t.error, error.message);
   };
 
   const handleReject = async (friendshipId: string) => {
-    Alert.alert('リクエストを拒否', '本当に拒否しますか？', [
-      { text: 'キャンセル', style: 'cancel' },
+    Alert.alert(t.friends_rejectTitle, t.friends_rejectConfirm, [
+      { text: t.cancel, style: 'cancel' },
       {
-        text: '拒否',
+        text: t.friends_reject,
         style: 'destructive',
         onPress: async () => {
           const { error } = await rejectRequest(friendshipId);
-          if (error) Alert.alert('エラー', error.message);
+          if (error) Alert.alert(t.error, error.message);
         },
       },
     ]);
@@ -31,10 +33,10 @@ export default function FriendManageScreen() {
 
   const sections = [
     ...(pendingRequests.length > 0
-      ? [{ title: `フレンドリクエスト（${pendingRequests.length}件）`, data: pendingRequests, type: 'pending' as const }]
+      ? [{ title: t.friends_requestCount.replace('{count}', String(pendingRequests.length)), data: pendingRequests, type: 'pending' as const }]
       : []),
     ...(friends.length > 0
-      ? [{ title: `友達一覧（${friends.length}人）`, data: friends, type: 'friend' as const }]
+      ? [{ title: t.friends_friendCount.replace('{count}', String(friends.length)), data: friends, type: 'friend' as const }]
       : []),
   ];
 
@@ -46,14 +48,14 @@ export default function FriendManageScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={24} color={colors.primary} />
         </Pressable>
-        <Text style={styles.headerTitle}>友達管理</Text>
+        <Text style={styles.headerTitle}>{t.friends_title}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {isEmpty ? (
         <View style={styles.emptyState}>
           <Ionicons name="people-outline" size={48} color={colors.subText} />
-          <Text style={styles.emptyTitle}>フレンドリクエストはありません</Text>
+          <Text style={styles.emptyTitle}>{t.friends_noRequests}</Text>
         </View>
       ) : (
         <SectionList
@@ -72,7 +74,7 @@ export default function FriendManageScreen() {
               <View style={styles.rowInfo}>
                 <Text style={styles.rowName}>{item.friend.display_name}</Text>
                 {section.type === 'pending' && (
-                  <Text style={styles.rowSub}>リクエストを受信</Text>
+                  <Text style={styles.rowSub}>{t.friends_received}</Text>
                 )}
               </View>
               {section.type === 'pending' && (
@@ -81,7 +83,7 @@ export default function FriendManageScreen() {
                     style={styles.acceptButton}
                     onPress={() => handleAccept(item.id)}
                   >
-                    <Text style={styles.acceptText}>承認</Text>
+                    <Text style={styles.acceptText}>{t.friends_accept}</Text>
                   </Pressable>
                   <Pressable
                     style={styles.rejectButton}

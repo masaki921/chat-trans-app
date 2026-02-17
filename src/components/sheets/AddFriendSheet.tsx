@@ -7,10 +7,13 @@ import {
   Pressable,
   Alert,
   Modal,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFriendships } from '../../hooks/useFriendships';
 import { colors, typography, spacing } from '../../theme';
+import { useI18n } from '../../i18n';
 
 export type AddFriendSheetRef = {
   open: () => void;
@@ -19,6 +22,7 @@ export type AddFriendSheetRef = {
 
 export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
   const { sendFriendRequest } = useFriendships();
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const [userId, setUserId] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -30,7 +34,7 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
 
   const handleSend = async () => {
     if (!userId.trim()) {
-      Alert.alert('エラー', 'ユーザーIDを入力してください');
+      Alert.alert(t.error, t.addFriend_idRequired);
       return;
     }
 
@@ -39,9 +43,9 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
     setIsLoading(false);
 
     if (error) {
-      Alert.alert('エラー', error.message);
+      Alert.alert(t.error, error.message);
     } else {
-      Alert.alert('送信完了', 'フレンドリクエストを送信しました');
+      Alert.alert(t.addFriend_success, t.addFriend_successMessage);
       setUserId('');
       setVisible(false);
     }
@@ -49,7 +53,10 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
+      <KeyboardAvoidingView
+        style={styles.overlay}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <Pressable style={styles.backdrop} onPress={() => setVisible(false)} />
         <View style={styles.sheet}>
           <View style={styles.handleArea}>
@@ -57,7 +64,7 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
           </View>
 
           <View style={styles.header}>
-            <Text style={styles.title}>友達を追加</Text>
+            <Text style={styles.title}>{t.addFriend_title}</Text>
             <Pressable onPress={() => setVisible(false)}>
               <Ionicons name="close" size={24} color={colors.subText} />
             </Pressable>
@@ -65,12 +72,12 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
 
           <View style={styles.content}>
             <Text style={styles.description}>
-              相手のフレンドコードを入力してリクエストを送信
+              {t.addFriend_description}
             </Text>
 
             <TextInput
               style={styles.input}
-              placeholder="フレンドコード（例: A1B2C3D4）"
+              placeholder={t.addFriend_placeholder}
               placeholderTextColor={colors.subText}
               value={userId}
               onChangeText={setUserId}
@@ -84,12 +91,12 @@ export const AddFriendSheet = forwardRef<AddFriendSheetRef>((_, ref) => {
               disabled={isLoading}
             >
               <Text style={styles.buttonText}>
-                {isLoading ? '送信中...' : 'リクエストを送信'}
+                {isLoading ? t.addFriend_sending : t.addFriend_send}
               </Text>
             </Pressable>
           </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 });

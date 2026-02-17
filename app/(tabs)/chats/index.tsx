@@ -1,5 +1,5 @@
 import { useRef, useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,11 +9,13 @@ import { ConversationItem } from '../../../src/components/chat/ConversationItem'
 import { NewChatSheet, NewChatSheetRef } from '../../../src/components/sheets/NewChatSheet';
 import { AddFriendSheet, AddFriendSheetRef } from '../../../src/components/sheets/AddFriendSheet';
 import { colors, typography, spacing } from '../../../src/theme';
+import { useI18n } from '../../../src/i18n';
 
 export default function ChatListScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { conversations, refetch } = useConversations();
+  const { conversations, isLoading, refetch } = useConversations();
+  const { t } = useI18n();
   const newChatRef = useRef<NewChatSheetRef>(null);
   const addFriendRef = useRef<AddFriendSheetRef>(null);
 
@@ -31,7 +33,7 @@ export default function ChatListScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chats</Text>
+        <Text style={styles.headerTitle}>{t.chats_title}</Text>
         <Pressable
           style={styles.addButton}
           onPress={() => newChatRef.current?.open()}
@@ -40,7 +42,11 @@ export default function ChatListScreen() {
         </Pressable>
       </View>
 
-      {conversations.length === 0 ? (
+      {isLoading ? (
+        <View style={styles.loadingState}>
+          <ActivityIndicator size="small" color={colors.primary} />
+        </View>
+      ) : conversations.length === 0 ? (
         <View style={styles.emptyState}>
           <View style={styles.emptyIcon}>
             <Ionicons
@@ -49,15 +55,13 @@ export default function ChatListScreen() {
               color={colors.subText}
             />
           </View>
-          <Text style={styles.emptyTitle}>会話を始めましょう</Text>
-          <Text style={styles.emptyMessage}>
-            友達を追加して{'\n'}最初のメッセージを送りましょう
-          </Text>
+          <Text style={styles.emptyTitle}>{t.chats_empty_title}</Text>
+          <Text style={styles.emptyMessage}>{t.chats_empty_message}</Text>
           <Pressable
             style={styles.emptyButton}
             onPress={() => addFriendRef.current?.open()}
           >
-            <Text style={styles.emptyButtonText}>友達を追加する</Text>
+            <Text style={styles.emptyButtonText}>{t.chats_empty_button}</Text>
           </Pressable>
         </View>
       ) : (
@@ -114,6 +118,11 @@ const styles = StyleSheet.create({
     height: 0.5,
     backgroundColor: colors.divider,
     marginLeft: 82,
+  },
+  loadingState: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyState: {
     flex: 1,

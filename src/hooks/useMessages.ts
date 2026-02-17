@@ -102,6 +102,21 @@ export function useMessages(conversationId: string) {
           }
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'messages',
+          filter: `conversation_id=eq.${conversationId}`,
+        },
+        (payload) => {
+          const deleted = payload.old as { id: string };
+          if (deleted?.id) {
+            removeMessage(deleted.id);
+          }
+        }
+      )
       .subscribe();
 
     return () => {

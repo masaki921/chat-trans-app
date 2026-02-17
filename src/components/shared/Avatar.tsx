@@ -13,7 +13,7 @@ export function Avatar({ uri, name, size = 44 }: Props) {
   const initial = name?.charAt(0)?.toUpperCase() ?? '?';
 
   return (
-    <View style={{ width: size, height: size }}>
+    <View style={{ width: size, height: size }} accessibilityLabel={name ? `${name}'s avatar` : 'Avatar'}>
       {uri ? (
         <Image
           source={{ uri }}

@@ -17,24 +17,25 @@ import { useAuthStore } from '../../src/stores/authStore';
 import { colors, typography, spacing } from '../../src/theme';
 import { getDeviceLanguage } from '../../src/utils/languages';
 import { useAvatarPicker } from '../../src/hooks/useAvatarPicker';
+import { useI18n } from '../../src/i18n';
 
 export default function RegisterStep2Screen() {
   const router = useRouter();
   const { user, updateProfile, isLoading } = useAuthStore();
+  const { t } = useI18n();
   const [displayName, setDisplayName] = useState('');
   const { avatarUri, isUploading, showPicker, uploadLocalAvatar } =
     useAvatarPicker({ localOnly: true });
 
   const handleComplete = async () => {
     if (!displayName.trim()) {
-      Alert.alert('エラー', '表示名を入力してください');
+      Alert.alert(t.error, t.profile_setup_nameRequired);
       return;
     }
     if (!user) return;
 
     const primaryLanguage = getDeviceLanguage();
 
-    // アバターがあればアップロード
     let avatarUrl: string | null = null;
     if (avatarUri) {
       avatarUrl = await uploadLocalAvatar(user.id);
@@ -51,7 +52,7 @@ export default function RegisterStep2Screen() {
     const { error } = await updateProfile(updates);
 
     if (error) {
-      Alert.alert('エラー', error.message);
+      Alert.alert(t.error, error.message);
       return;
     }
 
@@ -67,8 +68,8 @@ export default function RegisterStep2Screen() {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>プロフィール設定</Text>
-          <Text style={styles.step}>ステップ 2 / 2</Text>
+          <Text style={styles.title}>{t.profile_setup_title}</Text>
+          <Text style={styles.step}>{t.profile_setup_step}</Text>
 
           <View style={styles.avatarArea}>
             <Pressable
@@ -90,13 +91,13 @@ export default function RegisterStep2Screen() {
                 </View>
               )}
             </Pressable>
-            <Text style={styles.avatarHint}>タップして写真を追加</Text>
+            <Text style={styles.avatarHint}>{t.profile_setup_photo}</Text>
           </View>
 
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="表示名"
+              placeholder={t.profile_setup_name}
               placeholderTextColor={colors.subText}
               value={displayName}
               onChangeText={setDisplayName}
@@ -104,7 +105,7 @@ export default function RegisterStep2Screen() {
             />
           </View>
 
-          <Text style={styles.hint}>あとから変更できます</Text>
+          <Text style={styles.hint}>{t.profile_setup_hint}</Text>
 
           <Pressable
             style={[styles.button, busy && styles.buttonDisabled]}
@@ -112,7 +113,7 @@ export default function RegisterStep2Screen() {
             disabled={busy}
           >
             <Text style={styles.buttonText}>
-              {busy ? '設定中...' : '始める →'}
+              {busy ? t.profile_setup_loading : t.profile_setup_start}
             </Text>
           </Pressable>
         </View>

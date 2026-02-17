@@ -17,6 +17,7 @@ type AuthState = {
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: Error | null }>;
   updateProfile: (updates: Partial<Profile>) => Promise<{ error: Error | null }>;
 };
 
@@ -85,6 +86,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     await supabase.auth.signOut();
     set({ session: null, user: null, profile: null });
+  },
+
+  deleteAccount: async () => {
+    const user = get().user;
+    if (!user) return { error: new Error('Not authenticated') };
+
+    try {
+      await unregisterPushToken(user.id);
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) return { error: new Error(error.message) };
+      await supabase.auth.signOut();
+      set({ session: null, user: null, profile: null });
+      return { error: null };
+    } catch (e: any) {
+      return { error: new Error(e.message ?? 'Failed to delete account') };
+    }
   },
 
   updateProfile: async (updates) => {

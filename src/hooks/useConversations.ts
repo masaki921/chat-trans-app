@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/authStore';
 import { ConversationWithDetails } from '../types/chat';
 
 export function useConversations() {
-  const { conversations, setConversations, isLoadingConversations } = useChatStore();
+  const { conversations, setConversations, isLoadingConversations, setLoadingConversations } = useChatStore();
   const user = useAuthStore((s) => s.user);
 
   const fetchConversations = useCallback(async () => {
@@ -19,6 +19,7 @@ export function useConversations() {
 
     if (!memberRows || memberRows.length === 0) {
       setConversations([]);
+      setLoadingConversations(false);
       return;
     }
 
@@ -32,6 +33,7 @@ export function useConversations() {
 
     if (!convos) {
       setConversations([]);
+      setLoadingConversations(false);
       return;
     }
 
@@ -50,7 +52,30 @@ export function useConversations() {
       });
     }
 
-    setConversations(result);
+    // ブロック済みユーザーの会話をフィルタ
+    const { data: blockedRows } = await supabase
+      .from('friendships')
+      .select('requester_id, addressee_id')
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+      .eq('status', 'blocked');
+
+    if (blockedRows && blockedRows.length > 0) {
+      const blockedIds = new Set(
+        blockedRows.map((r) =>
+          r.requester_id === user.id ? r.addressee_id : r.requester_id
+        )
+      );
+      const filtered = result.filter((convo) => {
+        if (convo.type !== 'direct') return true;
+        const otherMember = convo.members.find((m) => m.user_id !== user.id);
+        return otherMember ? !blockedIds.has(otherMember.user_id) : true;
+      });
+      setConversations(filtered);
+    } else {
+      setConversations(result);
+    }
+
+    setLoadingConversations(false);
   }, [user]);
 
   useEffect(() => {

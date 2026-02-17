@@ -3,6 +3,7 @@ import { Avatar } from '../shared/Avatar';
 import { ConversationWithDetails } from '../../types/chat';
 import { colors, typography, spacing } from '../../theme';
 import { formatConversationTime } from '../../utils/formatDate';
+import { useI18n } from '../../i18n';
 
 type Props = {
   conversation: ConversationWithDetails;
@@ -11,7 +12,8 @@ type Props = {
 };
 
 export function ConversationItem({ conversation, currentUserId, onPress }: Props) {
-  // 相手のメンバーを取得（direct chatの場合）
+  const { t } = useI18n();
+
   const otherMember = conversation.members.find(
     (m) => m.user_id !== currentUserId
   );
@@ -21,8 +23,8 @@ export function ConversationItem({ conversation, currentUserId, onPress }: Props
 
   const displayName =
     conversation.type === 'direct'
-      ? otherMember?.profile?.display_name ?? '不明なユーザー'
-      : conversation.name ?? 'グループ';
+      ? otherMember?.profile?.display_name ?? t.conversation_unknownUser
+      : conversation.name ?? t.conversation_group;
 
   const avatarUrl =
     conversation.type === 'direct'

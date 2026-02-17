@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../shared/Avatar';
 import { useFriendships } from '../../hooks/useFriendships';
 import { colors, typography, spacing } from '../../theme';
+import { useI18n } from '../../i18n';
 
 type Props = {
   onStartChat: (conversationId: string) => void;
@@ -26,6 +27,7 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
   ({ onStartChat, onOpenAddFriend }, ref) => {
     const [visible, setVisible] = useState(false);
     const { friends, pendingRequests, startConversation } = useFriendships();
+    const { t } = useI18n();
 
     useImperativeHandle(ref, () => ({
       open: () => setVisible(true),
@@ -48,19 +50,17 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
         <View style={styles.overlay}>
           <Pressable style={styles.backdrop} onPress={() => setVisible(false)} />
           <View style={styles.sheet}>
-            {/* ハンドル */}
             <View style={styles.handleArea}>
               <View style={styles.handle} />
             </View>
 
             <View style={styles.header}>
-              <Text style={styles.title}>新しいチャット</Text>
+              <Text style={styles.title}>{t.newChat_title}</Text>
               <Pressable onPress={() => setVisible(false)}>
                 <Ionicons name="close" size={24} color={colors.subText} />
               </Pressable>
             </View>
 
-            {/* 友達追加ボタン */}
             <Pressable
               style={styles.addFriendRow}
               onPress={() => {
@@ -71,20 +71,18 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
               <View style={styles.addFriendIcon}>
                 <Ionicons name="person-add" size={20} color={colors.primary} />
               </View>
-              <Text style={styles.addFriendText}>IDで友達追加</Text>
+              <Text style={styles.addFriendText}>{t.newChat_addFriend}</Text>
             </Pressable>
 
-            {/* 保留中リクエストバナー */}
             {pendingRequests.length > 0 && (
               <View style={styles.pendingBanner}>
                 <Ionicons name="mail" size={18} color={colors.accent} />
                 <Text style={styles.pendingText}>
-                  フレンドリクエストが{pendingRequests.length}件あります
+                  {t.newChat_pendingRequests.replace('{count}', String(pendingRequests.length))}
                 </Text>
               </View>
             )}
 
-            {/* フレンド一覧 */}
             <FlatList
               data={friends}
               keyExtractor={(item) => item.id}
@@ -105,7 +103,7 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
               )}
               ListEmptyComponent={
                 <View style={styles.emptyFriends}>
-                  <Text style={styles.emptyText}>まだ友達がいません</Text>
+                  <Text style={styles.emptyText}>{t.newChat_noFriends}</Text>
                 </View>
               }
             />

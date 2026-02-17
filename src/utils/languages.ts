@@ -4,17 +4,6 @@ export const SUPPORTED_LANGUAGES: Record<string, string> = {
   ja: '日本語',
   en: 'English',
   zh: '中文',
-  ko: '한국어',
-  es: 'Español',
-  fr: 'Français',
-  de: 'Deutsch',
-  pt: 'Português',
-  it: 'Italiano',
-  ru: 'Русский',
-  ar: 'العربية',
-  th: 'ไทย',
-  vi: 'Tiếng Việt',
-  id: 'Bahasa Indonesia',
 };
 
 export function getDeviceLanguage(): string {

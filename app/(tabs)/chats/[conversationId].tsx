@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMessages } from '../../../src/hooks/useMessages';
 import { useAuth } from '../../../src/hooks/useAuth';
 import { useConversations } from '../../../src/hooks/useConversations';
+import { useFriendships } from '../../../src/hooks/useFriendships';
 import { MessageBubble } from '../../../src/components/chat/MessageBubble';
 import { ChatInputBar } from '../../../src/components/chat/ChatInputBar';
 import { Avatar } from '../../../src/components/shared/Avatar';
@@ -23,20 +24,22 @@ import { ImageViewerModal } from '../../../src/components/chat/ImageViewerModal'
 import { pickImage } from '../../../src/utils/imageUpload';
 import { setActiveConversation } from '../../../src/hooks/useNotifications';
 import { colors, typography, spacing } from '../../../src/theme';
+import { useI18n } from '../../../src/i18n';
 
 export default function ChatRoomScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const { user, profile } = useAuth();
+  const { t } = useI18n();
   const { messages, sendMessage, sendImage, deleteMessage } = useMessages(conversationId ?? '');
   const { conversations } = useConversations();
+  const { blockUser, reportUser } = useFriendships();
   const flatListRef = useRef<FlatList>(null);
 
   const [viewerImage, setViewerImage] = useState<string | null>(null);
 
   const userLanguage = profile?.primary_language ?? 'en';
 
-  // 相手の情報を取得
   const partner = useMemo(() => {
     const convo = conversations.find((c) => c.id === conversationId);
     if (!convo) return null;
@@ -44,24 +47,15 @@ export default function ChatRoomScreen() {
     return otherMember?.profile ?? null;
   }, [conversations, conversationId, user?.id]);
 
-  // 閲覧中の会話を設定（通知抑制用）
   useEffect(() => {
     setActiveConversation(conversationId ?? null);
     return () => setActiveConversation(null);
   }, [conversationId]);
 
-  // 新着メッセージ時に自動スクロール
-  useEffect(() => {
-    if (messages.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [messages.length]);
+  const invertedMessages = useMemo(() => [...messages].reverse(), [messages]);
 
-  // 画像添付ハンドラー
   const handleAttach = useCallback(() => {
-    const options = ['カメラで撮影', 'ライブラリから選択', 'キャンセル'];
+    const options = [t.chat_camera, t.chat_gallery, t.cancel];
     const cancelButtonIndex = 2;
 
     if (Platform.OS === 'ios') {
@@ -81,25 +75,135 @@ export default function ChatRoomScreen() {
         }
       );
     } else {
-      Alert.alert('画像を送信', '', [
+      Alert.alert(t.chat_sendImage, '', [
         {
-          text: 'カメラで撮影',
+          text: t.chat_camera,
           onPress: async () => {
             const uri = await pickImage('camera', { allowsEditing: false, quality: 0.7 });
             if (uri) sendImage(uri);
           },
         },
         {
-          text: 'ライブラリから選択',
+          text: t.chat_gallery,
           onPress: async () => {
             const uri = await pickImage('gallery', { allowsEditing: false, quality: 0.7 });
             if (uri) sendImage(uri);
           },
         },
-        { text: 'キャンセル', style: 'cancel' },
+        { text: t.cancel, style: 'cancel' },
       ]);
     }
-  }, [sendImage]);
+  }, [sendImage, t]);
+
+  const handleHeaderMenu = useCallback(() => {
+    if (!partner) return;
+
+    const options = [t.block_user, t.report_user, t.cancel];
+    const destructiveButtonIndex = 0;
+    const cancelButtonIndex = 2;
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options, destructiveButtonIndex, cancelButtonIndex },
+        (buttonIndex) => {
+          if (buttonIndex === 0) handleBlockUser();
+          if (buttonIndex === 1) handleReportUser();
+        }
+      );
+    } else {
+      Alert.alert('', '', [
+        { text: t.block_user, style: 'destructive', onPress: handleBlockUser },
+        { text: t.report_user, onPress: handleReportUser },
+        { text: t.cancel, style: 'cancel' },
+      ]);
+    }
+  }, [partner, t]);
+
+  const handleBlockUser = useCallback(() => {
+    if (!partner) return;
+    Alert.alert(t.block_user, t.block_confirm, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.block_user,
+        style: 'destructive',
+        onPress: async () => {
+          await blockUser(partner.id);
+          router.back();
+        },
+      },
+    ]);
+  }, [partner, blockUser, router, t]);
+
+  const handleReportUser = useCallback(() => {
+    if (!partner) return;
+    const reasons = [
+      t.report_reason_spam,
+      t.report_reason_harassment,
+      t.report_reason_inappropriate,
+      t.report_reason_other,
+      t.cancel,
+    ];
+
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { title: t.report_selectReason, options: reasons, cancelButtonIndex: 4 },
+        async (buttonIndex) => {
+          if (buttonIndex < 4) {
+            await reportUser(partner.id, reasons[buttonIndex]);
+            Alert.alert('', t.report_success);
+          }
+        }
+      );
+    } else {
+      Alert.alert(t.report_selectReason, '', [
+        ...reasons.slice(0, 4).map((reason) => ({
+          text: reason,
+          onPress: async () => {
+            await reportUser(partner.id, reason);
+            Alert.alert('', t.report_success);
+          },
+        })),
+        { text: t.cancel, style: 'cancel' as const },
+      ]);
+    }
+  }, [partner, reportUser, t]);
+
+  const handleReportMessage = useCallback(
+    (messageId: string) => {
+      if (!partner) return;
+      const reasons = [
+        t.report_reason_spam,
+        t.report_reason_harassment,
+        t.report_reason_inappropriate,
+        t.report_reason_other,
+        t.cancel,
+      ];
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { title: t.report_selectReason, options: reasons, cancelButtonIndex: 4 },
+          async (buttonIndex) => {
+            if (buttonIndex < 4) {
+              await reportUser(partner.id, reasons[buttonIndex], messageId);
+              Alert.alert('', t.report_success);
+            }
+          }
+        );
+      } else {
+        Alert.alert(t.report_selectReason, '', [
+          ...reasons.slice(0, 4).map((reason) => ({
+            text: reason,
+            onPress: async () => {
+              await reportUser(partner.id, reason, messageId);
+              Alert.alert('', t.report_success);
+            },
+          })),
+          { text: t.cancel, style: 'cancel' as const },
+        ]);
+      }
+    },
+    [partner, reportUser, t]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -110,7 +214,12 @@ export default function ChatRoomScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
+          <Pressable
+            onPress={() => router.back()}
+            style={styles.backButton}
+            accessibilityLabel="Go back"
+            accessibilityRole="button"
+          >
             <Ionicons name="chevron-back" size={24} color={colors.primary} />
           </Pressable>
           <Avatar
@@ -120,10 +229,15 @@ export default function ChatRoomScreen() {
           />
           <View style={styles.headerInfo}>
             <Text style={styles.headerName}>
-              {partner?.display_name ?? 'Chat'}
+              {partner?.display_name ?? t.chat_fallbackName}
             </Text>
           </View>
-          <Pressable style={styles.menuButton}>
+          <Pressable
+            style={styles.menuButton}
+            onPress={handleHeaderMenu}
+            accessibilityLabel="Chat options"
+            accessibilityRole="button"
+          >
             <Ionicons
               name="ellipsis-horizontal"
               size={24}
@@ -135,7 +249,8 @@ export default function ChatRoomScreen() {
         {/* Messages */}
         <FlatList
           ref={flatListRef}
-          data={messages}
+          data={invertedMessages}
+          inverted
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <MessageBubble
@@ -144,13 +259,15 @@ export default function ChatRoomScreen() {
               userLanguage={userLanguage}
               onImagePress={setViewerImage}
               onUnsend={deleteMessage}
+              onReport={handleReportMessage}
             />
           )}
           contentContainerStyle={styles.messagesList}
+          keyboardDismissMode="on-drag"
           ListEmptyComponent={
-            <View style={styles.emptyMessages}>
+            <View style={styles.emptyMessagesInverted}>
               <Text style={styles.emptyMessagesText}>
-                メッセージはまだありません
+                {t.chat_empty}
               </Text>
             </View>
           }
@@ -205,11 +322,12 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     flexGrow: 1,
   },
-  emptyMessages: {
+  emptyMessagesInverted: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 100,
+    transform: [{ scaleY: -1 }],
   },
   emptyMessagesText: {
     ...typography.sub,
