@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
 import { getLanguageName } from '../../../src/utils/languages';
-import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL } from '../../../src/utils/constants';
+import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUPPORT_URL } from '../../../src/utils/constants';
 import { Avatar } from '../../../src/components/shared/Avatar';
 import { useI18n } from '../../../src/i18n';
 
@@ -82,6 +82,11 @@ export default function SettingsScreen() {
   ];
 
   const legalItems: SettingsItem[] = [
+    {
+      icon: 'help-circle-outline',
+      label: t.settings_support,
+      onPress: () => Linking.openURL(SUPPORT_URL),
+    },
     {
       icon: 'shield-outline',
       label: t.settings_privacyPolicy,

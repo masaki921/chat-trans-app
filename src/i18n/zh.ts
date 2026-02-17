@@ -149,4 +149,5 @@ export const zh = {
   // Privacy & Terms
   settings_privacyPolicy: '隐私政策',
   settings_terms: '服务条款',
+  settings_support: '支持',
 };

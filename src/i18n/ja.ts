@@ -149,4 +149,5 @@ export const ja = {
   // Privacy & Terms
   settings_privacyPolicy: 'プライバシーポリシー',
   settings_terms: '利用規約',
+  settings_support: 'サポート',
 };

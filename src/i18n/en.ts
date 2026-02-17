@@ -149,4 +149,5 @@ export const en = {
   // Privacy & Terms
   settings_privacyPolicy: 'Privacy Policy',
   settings_terms: 'Terms of Service',
+  settings_support: 'Support',
 };
