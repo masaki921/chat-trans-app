@@ -40,8 +40,6 @@ export function ConversationItem({ conversation, currentUserId, onPress }: Props
         uri={avatarUrl}
         name={displayName}
         size={50}
-        showOnline
-        isOnline={otherMember?.profile?.is_online}
       />
 
       <View style={styles.content}>

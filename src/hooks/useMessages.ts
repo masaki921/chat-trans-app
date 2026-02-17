@@ -14,7 +14,7 @@ function generateUUID(): string {
 }
 
 export function useMessages(conversationId: string) {
-  const { currentMessages, setCurrentMessages, addMessage, updateMessageTranslations } =
+  const { currentMessages, setCurrentMessages, addMessage, updateMessageTranslations, removeMessage } =
     useChatStore();
   const user = useAuthStore((s) => s.user);
   const profile = useAuthStore((s) => s.profile);
@@ -213,7 +213,39 @@ export function useMessages(conversationId: string) {
     [user, profile, conversationId]
   );
 
-  return { messages: currentMessages, sendMessage, sendImage, refetch: fetchMessages };
+  // メッセージ削除（送信取り消し）
+  const deleteMessage = useCallback(
+    async (messageId: string, mediaUrl?: string | null) => {
+      // ローカルから即削除（楽観的更新）
+      removeMessage(messageId);
+
+      // DBから削除
+      const { error } = await supabase
+        .from('messages')
+        .delete()
+        .eq('id', messageId);
+
+      if (error) {
+        console.error('Message delete error:', error);
+      }
+
+      // 画像メッセージの場合、Storageからも削除
+      if (mediaUrl) {
+        try {
+          const url = new URL(mediaUrl.split('?')[0]);
+          const pathParts = url.pathname.split('/storage/v1/object/public/chat-images/');
+          if (pathParts[1]) {
+            await supabase.storage.from('chat-images').remove([pathParts[1]]);
+          }
+        } catch {
+          // Storage削除失敗は無視（メッセージ自体は削除済み）
+        }
+      }
+    },
+    []
+  );
+
+  return { messages: currentMessages, sendMessage, sendImage, deleteMessage, refetch: fetchMessages };
 }
 
 // 翻訳リクエスト（Edge Functionを呼び出し）

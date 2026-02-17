@@ -11,6 +11,7 @@ type ChatState = {
   setCurrentMessages: (messages: MessageWithSender[]) => void;
   addMessage: (message: MessageWithSender) => void;
   updateMessageTranslations: (messageId: string, translations: Record<string, string>) => void;
+  removeMessage: (messageId: string) => void;
 };
 
 export const useChatStore = create<ChatState>((set) => ({
@@ -33,5 +34,10 @@ export const useChatStore = create<ChatState>((set) => ({
       currentMessages: state.currentMessages.map((msg) =>
         msg.id === messageId ? { ...msg, translations } : msg
       ),
+    })),
+
+  removeMessage: (messageId) =>
+    set((state) => ({
+      currentMessages: state.currentMessages.filter((msg) => msg.id !== messageId),
     })),
 }));

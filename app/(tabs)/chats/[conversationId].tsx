@@ -28,7 +28,7 @@ export default function ChatRoomScreen() {
   const { conversationId } = useLocalSearchParams<{ conversationId: string }>();
   const router = useRouter();
   const { user, profile } = useAuth();
-  const { messages, sendMessage, sendImage } = useMessages(conversationId ?? '');
+  const { messages, sendMessage, sendImage, deleteMessage } = useMessages(conversationId ?? '');
   const { conversations } = useConversations();
   const flatListRef = useRef<FlatList>(null);
 
@@ -143,6 +143,7 @@ export default function ChatRoomScreen() {
               isOwn={item.sender_id === user?.id}
               userLanguage={userLanguage}
               onImagePress={setViewerImage}
+              onUnsend={deleteMessage}
             />
           )}
           contentContainerStyle={styles.messagesList}

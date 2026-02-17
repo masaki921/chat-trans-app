@@ -1,5 +1,7 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ActionSheetIOS, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { MessageWithSender } from '../../types/chat';
 import { colors, typography, spacing } from '../../theme';
 import { formatMessageTime } from '../../utils/formatDate';
@@ -10,17 +12,90 @@ type Props = {
   isOwn: boolean;
   userLanguage: string;
   onImagePress?: (uri: string) => void;
+  onUnsend?: (messageId: string, mediaUrl?: string | null) => void;
 };
 
-export function MessageBubble({ message, isOwn, userLanguage, onImagePress }: Props) {
+export function MessageBubble({ message, isOwn, userLanguage, onImagePress, onUnsend }: Props) {
   const needsTranslation = message.original_language !== userLanguage;
   const translatedText = message.translations?.[userLanguage];
   const time = formatMessageTime(message.created_at);
   const isImage = message.type === 'image' && message.media_url;
 
+  const handleLongPress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    if (isImage) {
+      // 画像 & 自分のメッセージのみ送信取り消し
+      if (!isOwn) return;
+
+      const options = ['送信取り消し', 'キャンセル'];
+      const destructiveButtonIndex = 0;
+      const cancelButtonIndex = 1;
+
+      if (Platform.OS === 'ios') {
+        ActionSheetIOS.showActionSheetWithOptions(
+          { options, destructiveButtonIndex, cancelButtonIndex },
+          (buttonIndex) => {
+            if (buttonIndex === 0) onUnsend?.(message.id, message.media_url);
+          }
+        );
+      } else {
+        Alert.alert('', '', [
+          { text: '送信取り消し', style: 'destructive', onPress: () => onUnsend?.(message.id, message.media_url) },
+          { text: 'キャンセル', style: 'cancel' },
+        ]);
+      }
+    } else {
+      // テキストメッセージ
+      const copyText = needsTranslation && translatedText
+        ? `${translatedText}\n${message.content}`
+        : message.content;
+
+      if (isOwn) {
+        const options = ['コピー', '送信取り消し', 'キャンセル'];
+        const destructiveButtonIndex = 1;
+        const cancelButtonIndex = 2;
+
+        if (Platform.OS === 'ios') {
+          ActionSheetIOS.showActionSheetWithOptions(
+            { options, destructiveButtonIndex, cancelButtonIndex },
+            (buttonIndex) => {
+              if (buttonIndex === 0) Clipboard.setStringAsync(copyText);
+              if (buttonIndex === 1) onUnsend?.(message.id);
+            }
+          );
+        } else {
+          Alert.alert('', '', [
+            { text: 'コピー', onPress: () => Clipboard.setStringAsync(copyText) },
+            { text: '送信取り消し', style: 'destructive', onPress: () => onUnsend?.(message.id) },
+            { text: 'キャンセル', style: 'cancel' },
+          ]);
+        }
+      } else {
+        const options = ['コピー', 'キャンセル'];
+        const cancelButtonIndex = 1;
+
+        if (Platform.OS === 'ios') {
+          ActionSheetIOS.showActionSheetWithOptions(
+            { options, cancelButtonIndex },
+            (buttonIndex) => {
+              if (buttonIndex === 0) Clipboard.setStringAsync(copyText);
+            }
+          );
+        } else {
+          Alert.alert('', '', [
+            { text: 'コピー', onPress: () => Clipboard.setStringAsync(copyText) },
+            { text: 'キャンセル', style: 'cancel' },
+          ]);
+        }
+      }
+    }
+  };
+
   return (
     <View style={[styles.container, isOwn ? styles.containerOwn : styles.containerOther]}>
-      <View
+      <Pressable
+        onLongPress={handleLongPress}
         style={[
           styles.bubble,
           isOwn ? styles.bubbleOwn : styles.bubbleOther,
@@ -72,7 +147,7 @@ export function MessageBubble({ message, isOwn, userLanguage, onImagePress }: Pr
         <Text style={[styles.time, isOwn ? styles.timeOwn : styles.timeOther]}>
           {time}
         </Text>
-      </View>
+      </Pressable>
     </View>
   );
 }

@@ -6,8 +6,6 @@ export type Profile = {
   primary_language: string;
   friend_code: string;
   push_token: string | null;
-  is_online: boolean;
-  last_seen_at: string | null;
   created_at: string;
   updated_at: string;
 };

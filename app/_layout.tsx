@@ -5,7 +5,6 @@ import * as SplashScreen from 'expo-splash-screen';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../src/stores/authStore';
-import { useOnlineStatus } from '../src/hooks/useOnlineStatus';
 import { useNotifications } from '../src/hooks/useNotifications';
 import { colors } from '../src/theme';
 
@@ -16,7 +15,6 @@ export default function RootLayout() {
   const segments = useSegments();
   const router = useRouter();
 
-  useOnlineStatus();
   useNotifications();
 
   useEffect(() => {

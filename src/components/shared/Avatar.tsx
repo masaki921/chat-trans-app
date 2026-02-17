@@ -6,11 +6,9 @@ type Props = {
   uri?: string | null;
   name?: string;
   size?: number;
-  showOnline?: boolean;
-  isOnline?: boolean;
 };
 
-export function Avatar({ uri, name, size = 44, showOnline = false, isOnline = false }: Props) {
+export function Avatar({ uri, name, size = 44 }: Props) {
   const borderRadius = size / 2;
   const initial = name?.charAt(0)?.toUpperCase() ?? '?';
 
@@ -34,9 +32,6 @@ export function Avatar({ uri, name, size = 44, showOnline = false, isOnline = fa
           </Text>
         </View>
       )}
-      {showOnline && isOnline && (
-        <View style={[styles.onlineDot, { right: 0, bottom: 0 }]} />
-      )}
     </View>
   );
 }
@@ -53,14 +48,5 @@ const styles = StyleSheet.create({
   initial: {
     color: colors.white,
     fontWeight: '600',
-  },
-  onlineDot: {
-    position: 'absolute',
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: colors.success,
-    borderWidth: 2,
-    borderColor: colors.background,
   },
 });
