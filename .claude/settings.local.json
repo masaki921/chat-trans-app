@@ -13,7 +13,11 @@
       "Bash(eas build:list:*)",
       "Bash(git add:*)",
       "Bash(eas build:*)",
-      "Bash(eas submit:*)"
+      "Bash(eas submit:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(magick:*)",
+      "Bash(convert:*)"
     ]
   }
 }

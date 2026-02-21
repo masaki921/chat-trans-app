@@ -68,6 +68,7 @@ const styles = StyleSheet.create({
     height: 140,
     borderRadius: 70,
     marginBottom: spacing.lg,
+    backgroundColor: colors.white,
   },
   appName: {
     fontSize: 36,
