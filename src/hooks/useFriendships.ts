@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { useAuthStore } from '../stores/authStore';
 import { Profile, Friendship } from '../types/database';
@@ -13,6 +13,7 @@ export function useFriendships() {
   const [pendingRequests, setPendingRequests] = useState<FriendWithProfile[]>([]);
   const [blockedUsers, setBlockedUsers] = useState<FriendWithProfile[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const isCreatingConversation = useRef(false);
 
   const fetchFriends = useCallback(async () => {
     if (!user) return;
@@ -65,21 +66,20 @@ export function useFriendships() {
       setPendingRequests(pendingWithProfiles);
     }
 
-    // ブロック済みユーザー
+    // ブロック済みユーザー（自分がブロックした相手のみ）
     const { data: blocked } = await supabase
       .from('friendships')
       .select('*')
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+      .eq('requester_id', user.id)
       .eq('status', 'blocked');
 
     if (blocked) {
       const blockedWithProfiles: FriendWithProfile[] = [];
       for (const f of blocked) {
-        const blockedId = f.requester_id === user.id ? f.addressee_id : f.requester_id;
         const { data: profile } = await supabase
           .from('profiles')
           .select('*')
-          .eq('id', blockedId)
+          .eq('id', f.addressee_id)
           .single();
         if (profile) {
           blockedWithProfiles.push({ ...f, friend: profile as Profile });
@@ -112,6 +112,27 @@ export function useFriendships() {
 
       if (targetProfile.id === user.id) {
         return { error: new Error('自分自身には送信できません') };
+      }
+
+      // 既存のfriendship（両方向）をチェック
+      const { data: existing } = await supabase
+        .from('friendships')
+        .select('status')
+        .or(
+          `and(requester_id.eq.${user.id},addressee_id.eq.${targetProfile.id}),and(requester_id.eq.${targetProfile.id},addressee_id.eq.${user.id})`
+        )
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.status === 'accepted') {
+          return { error: new Error('すでに友達です') };
+        }
+        if (existing.status === 'pending') {
+          return { error: new Error('すでにリクエスト済みです') };
+        }
+        if (existing.status === 'blocked') {
+          return { error: new Error('リクエストを送信できません') };
+        }
       }
 
       const { error } = await supabase.from('friendships').insert({
@@ -174,11 +195,24 @@ export function useFriendships() {
         .maybeSingle();
 
       if (existing) {
-        const { error } = await supabase
-          .from('friendships')
-          .update({ status: 'blocked' })
-          .eq('id', existing.id);
-        if (error) return { error: new Error(error.message) };
+        if (existing.requester_id === user.id) {
+          // 自分がrequester → そのままupdateでOK
+          const { error } = await supabase
+            .from('friendships')
+            .update({ status: 'blocked' })
+            .eq('id', existing.id);
+          if (error) return { error: new Error(error.message) };
+        } else {
+          // 自分がaddressee → 行を削除して新規作成（requester=自分）
+          await supabase
+            .from('friendships')
+            .delete()
+            .eq('id', existing.id);
+          const { error } = await supabase
+            .from('friendships')
+            .insert({ requester_id: user.id, addressee_id: targetUserId, status: 'blocked' });
+          if (error) return { error: new Error(error.message) };
+        }
       } else {
         const { error } = await supabase
           .from('friendships')
@@ -226,62 +260,67 @@ export function useFriendships() {
   // 会話を開始（既存or新規作成）
   const startConversation = useCallback(
     async (friendId: string) => {
-      if (!user) return null;
+      if (!user || isCreatingConversation.current) return null;
+      isCreatingConversation.current = true;
 
-      // 既存のdirect会話を検索
-      const { data: myConvos } = await supabase
-        .from('conversation_members')
-        .select('conversation_id')
-        .eq('user_id', user.id);
+      try {
+        // 既存のdirect会話を検索
+        const { data: myConvos } = await supabase
+          .from('conversation_members')
+          .select('conversation_id')
+          .eq('user_id', user.id);
 
-      if (myConvos) {
-        for (const mc of myConvos) {
-          const { data: members } = await supabase
-            .from('conversation_members')
-            .select('user_id')
-            .eq('conversation_id', mc.conversation_id);
+        if (myConvos) {
+          for (const mc of myConvos) {
+            const { data: members } = await supabase
+              .from('conversation_members')
+              .select('user_id')
+              .eq('conversation_id', mc.conversation_id);
 
-          const { data: convo } = await supabase
-            .from('conversations')
-            .select('type')
-            .eq('id', mc.conversation_id)
-            .single();
+            const { data: convo } = await supabase
+              .from('conversations')
+              .select('type')
+              .eq('id', mc.conversation_id)
+              .single();
 
-          if (
-            convo?.type === 'direct' &&
-            members?.length === 2 &&
-            members.some((m) => m.user_id === friendId)
-          ) {
-            return mc.conversation_id;
+            if (
+              convo?.type === 'direct' &&
+              members?.length === 2 &&
+              members.some((m) => m.user_id === friendId)
+            ) {
+              return mc.conversation_id;
+            }
           }
         }
+
+        // 新規会話作成（クライアントでUUID生成し、INSERT→メンバー追加の順で実行）
+        const conversationId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+          /[xy]/g,
+          (c) => {
+            const r = (Math.random() * 16) | 0;
+            return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+          }
+        );
+        const { error } = await supabase
+          .from('conversations')
+          .insert({ id: conversationId, type: 'direct', created_by: user.id });
+
+        if (error) return null;
+
+        // メンバー追加
+        const { error: memberError } = await supabase
+          .from('conversation_members')
+          .insert([
+            { conversation_id: conversationId, user_id: user.id, role: 'owner' },
+            { conversation_id: conversationId, user_id: friendId, role: 'member' },
+          ]);
+
+        if (memberError) return null;
+
+        return conversationId;
+      } finally {
+        isCreatingConversation.current = false;
       }
-
-      // 新規会話作成（クライアントでUUID生成し、INSERT→メンバー追加の順で実行）
-      const conversationId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
-        /[xy]/g,
-        (c) => {
-          const r = (Math.random() * 16) | 0;
-          return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
-        }
-      );
-      const { error } = await supabase
-        .from('conversations')
-        .insert({ id: conversationId, type: 'direct', created_by: user.id });
-
-      if (error) return null;
-
-      // メンバー追加
-      const { error: memberError } = await supabase
-        .from('conversation_members')
-        .insert([
-          { conversation_id: conversationId, user_id: user.id, role: 'owner' },
-          { conversation_id: conversationId, user_id: friendId, role: 'member' },
-        ]);
-
-      if (memberError) return null;
-
-      return conversationId;
     },
     [user]
   );

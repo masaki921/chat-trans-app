@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable, SectionList, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,38 +9,8 @@ import { useI18n } from '../../../src/i18n';
 
 export default function FriendManageScreen() {
   const router = useRouter();
-  const { friends, pendingRequests, acceptRequest, rejectRequest } = useFriendships();
+  const { friends } = useFriendships();
   const { t } = useI18n();
-
-  const handleAccept = async (friendshipId: string) => {
-    const { error } = await acceptRequest(friendshipId);
-    if (error) Alert.alert(t.error, error.message);
-  };
-
-  const handleReject = async (friendshipId: string) => {
-    Alert.alert(t.friends_rejectTitle, t.friends_rejectConfirm, [
-      { text: t.cancel, style: 'cancel' },
-      {
-        text: t.friends_reject,
-        style: 'destructive',
-        onPress: async () => {
-          const { error } = await rejectRequest(friendshipId);
-          if (error) Alert.alert(t.error, error.message);
-        },
-      },
-    ]);
-  };
-
-  const sections = [
-    ...(pendingRequests.length > 0
-      ? [{ title: t.friends_requestCount.replace('{count}', String(pendingRequests.length)), data: pendingRequests, type: 'pending' as const }]
-      : []),
-    ...(friends.length > 0
-      ? [{ title: t.friends_friendCount.replace('{count}', String(friends.length)), data: friends, type: 'friend' as const }]
-      : []),
-  ];
-
-  const isEmpty = pendingRequests.length === 0 && friends.length === 0;
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -52,19 +22,21 @@ export default function FriendManageScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      {isEmpty ? (
+      {friends.length === 0 ? (
         <View style={styles.emptyState}>
           <Ionicons name="people-outline" size={48} color={colors.subText} />
-          <Text style={styles.emptyTitle}>{t.friends_noRequests}</Text>
+          <Text style={styles.emptyTitle}>{t.newChat_noFriends}</Text>
         </View>
       ) : (
-        <SectionList
-          sections={sections}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          renderSectionHeader={({ section }) => (
-            <Text style={styles.sectionTitle}>{section.title}</Text>
-          )}
-          renderItem={({ item, section }) => (
+        <FlatList
+          data={friends}
+          keyExtractor={(item) => item.id}
+          ListHeaderComponent={
+            <Text style={styles.sectionTitle}>
+              {t.friends_friendCount.replace('{count}', String(friends.length))}
+            </Text>
+          }
+          renderItem={({ item }) => (
             <View style={styles.row}>
               <Avatar
                 uri={item.friend.avatar_url}
@@ -73,26 +45,7 @@ export default function FriendManageScreen() {
               />
               <View style={styles.rowInfo}>
                 <Text style={styles.rowName}>{item.friend.display_name}</Text>
-                {section.type === 'pending' && (
-                  <Text style={styles.rowSub}>{t.friends_received}</Text>
-                )}
               </View>
-              {section.type === 'pending' && (
-                <View style={styles.actions}>
-                  <Pressable
-                    style={styles.acceptButton}
-                    onPress={() => handleAccept(item.id)}
-                  >
-                    <Text style={styles.acceptText}>{t.friends_accept}</Text>
-                  </Pressable>
-                  <Pressable
-                    style={styles.rejectButton}
-                    onPress={() => handleReject(item.id)}
-                  >
-                    <Ionicons name="close" size={18} color={colors.subText} />
-                  </Pressable>
-                </View>
-              )}
             </View>
           )}
         />
@@ -143,35 +96,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '500',
     color: colors.text,
-  },
-  rowSub: {
-    fontSize: 12,
-    color: colors.subText,
-    marginTop: 2,
-  },
-  actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  acceptButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  acceptText: {
-    color: colors.white,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  rejectButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.surface,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   emptyState: {
     flex: 1,

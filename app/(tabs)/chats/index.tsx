@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useConversations } from '../../../src/hooks/useConversations';
 import { useAuth } from '../../../src/hooks/useAuth';
+import { useFriendships } from '../../../src/hooks/useFriendships';
 import { ConversationItem } from '../../../src/components/chat/ConversationItem';
 import { NewChatSheet, NewChatSheetRef } from '../../../src/components/sheets/NewChatSheet';
 import { AddFriendSheet, AddFriendSheetRef } from '../../../src/components/sheets/AddFriendSheet';
@@ -15,6 +16,21 @@ export default function ChatListScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { conversations, isLoading, refetch } = useConversations();
+  const {
+    friends,
+    pendingRequests,
+    acceptRequest,
+    rejectRequest,
+    startConversation,
+    refetch: refetchFriends,
+  } = useFriendships();
+
+  // 既にチャットがある友達をNewChatSheetから除外
+  const friendsWithoutChat = friends.filter((f) => {
+    return !conversations.some((conv) =>
+      conv.members?.some((m) => m.user_id === f.friend.id)
+    );
+  });
   const { t } = useI18n();
   const newChatRef = useRef<NewChatSheetRef>(null);
   const addFriendRef = useRef<AddFriendSheetRef>(null);
@@ -34,12 +50,19 @@ export default function ChatListScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t.chats_title}</Text>
-        <Pressable
-          style={styles.addButton}
-          onPress={() => newChatRef.current?.open()}
-        >
-          <Ionicons name="add" size={28} color={colors.primary} />
-        </Pressable>
+        <View>
+          <Pressable
+            style={styles.addButton}
+            onPress={() => newChatRef.current?.open()}
+          >
+            <Ionicons name="add" size={28} color={colors.primary} />
+          </Pressable>
+          {pendingRequests.length > 0 && (
+            <View style={styles.addBadge}>
+              <Text style={styles.addBadgeText}>{pendingRequests.length}</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {isLoading ? (
@@ -85,6 +108,12 @@ export default function ChatListScreen() {
         ref={newChatRef}
         onStartChat={handleStartChat}
         onOpenAddFriend={handleOpenAddFriend}
+        friends={friendsWithoutChat}
+        pendingRequests={pendingRequests}
+        acceptRequest={acceptRequest}
+        rejectRequest={rejectRequest}
+        startConversation={startConversation}
+        refetch={refetchFriends}
       />
       <AddFriendSheet ref={addFriendRef} />
     </SafeAreaView>
@@ -113,6 +142,23 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  addBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: colors.accent,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+  },
+  addBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
   },
   separator: {
     height: 0.5,

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ChatTranslate",
+    "name": "Yappi",
     "slug": "chat-translate-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,7 +11,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FAFAF8"
+      "backgroundColor": "#FAFAF6"
     },
     "ios": {
       "supportsTablet": true,
@@ -27,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FAFAF8"
+        "backgroundColor": "#FAFAF6"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.chattranslate.app",
@@ -47,7 +47,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#4A6CF7"
+          "color": "#2EAC6A"
         }
       ]
     ],

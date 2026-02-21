@@ -58,6 +58,9 @@ export const zh = {
   chat_gallery: '从相册选择',
   chat_sendImage: '发送图片',
 
+  chat_delete: '删除聊天',
+  chat_deleteConfirm: '确定要删除此聊天吗？您将退出对话。',
+
   // Message Actions
   message_unsend: '撤回',
   message_saveImage: '保存到设备',

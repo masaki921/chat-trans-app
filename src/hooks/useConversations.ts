@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { useFocusEffect } from 'expo-router';
 import { supabase } from '../services/supabase';
 import { useChatStore } from '../stores/chatStore';
 import { useAuthStore } from '../stores/authStore';
@@ -52,18 +53,16 @@ export function useConversations() {
       });
     }
 
-    // ブロック済みユーザーの会話をフィルタ
+    // ブロック済みユーザーの会話をフィルタ（自分がブロックした相手のみ）
     const { data: blockedRows } = await supabase
       .from('friendships')
-      .select('requester_id, addressee_id')
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+      .select('addressee_id')
+      .eq('requester_id', user.id)
       .eq('status', 'blocked');
 
     if (blockedRows && blockedRows.length > 0) {
       const blockedIds = new Set(
-        blockedRows.map((r) =>
-          r.requester_id === user.id ? r.addressee_id : r.requester_id
-        )
+        blockedRows.map((r) => r.addressee_id)
       );
       const filtered = result.filter((convo) => {
         if (convo.type !== 'direct') return true;
@@ -81,6 +80,13 @@ export function useConversations() {
   useEffect(() => {
     fetchConversations();
   }, [fetchConversations]);
+
+  // タブがフォーカスされるたびにリフレッシュ
+  useFocusEffect(
+    useCallback(() => {
+      fetchConversations();
+    }, [fetchConversations])
+  );
 
   // Realtime: conversation_membersの変更を監視（未読カウント更新等）
   useEffect(() => {
@@ -118,5 +124,34 @@ export function useConversations() {
     };
   }, [user]);
 
-  return { conversations, isLoading: isLoadingConversations, refetch: fetchConversations };
+  const deleteConversation = useCallback(
+    async (conversationId: string) => {
+      if (!user) return;
+
+      // 自分をメンバーから削除
+      await supabase
+        .from('conversation_members')
+        .delete()
+        .eq('conversation_id', conversationId)
+        .eq('user_id', user.id);
+
+      // 残りメンバーがいなければ会話自体を削除
+      const { data: remaining } = await supabase
+        .from('conversation_members')
+        .select('user_id')
+        .eq('conversation_id', conversationId);
+
+      if (!remaining || remaining.length === 0) {
+        await supabase
+          .from('conversations')
+          .delete()
+          .eq('id', conversationId);
+      }
+
+      fetchConversations();
+    },
+    [user, fetchConversations]
+  );
+
+  return { conversations, isLoading: isLoadingConversations, refetch: fetchConversations, deleteConversation };
 }

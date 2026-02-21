@@ -15,8 +15,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useMessages } from '../../../src/hooks/useMessages';
 import { useAuth } from '../../../src/hooks/useAuth';
-import { useConversations } from '../../../src/hooks/useConversations';
 import { useFriendships } from '../../../src/hooks/useFriendships';
+import { useConversations } from '../../../src/hooks/useConversations';
+import { supabase } from '../../../src/services/supabase';
+import { Profile } from '../../../src/types/database';
 import { MessageBubble } from '../../../src/components/chat/MessageBubble';
 import { ChatInputBar } from '../../../src/components/chat/ChatInputBar';
 import { Avatar } from '../../../src/components/shared/Avatar';
@@ -32,20 +34,31 @@ export default function ChatRoomScreen() {
   const { user, profile } = useAuth();
   const { t } = useI18n();
   const { messages, sendMessage, sendImage, deleteMessage } = useMessages(conversationId ?? '');
-  const { conversations } = useConversations();
   const { blockUser, reportUser } = useFriendships();
+  const { deleteConversation } = useConversations();
   const flatListRef = useRef<FlatList>(null);
 
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [partner, setPartner] = useState<Profile | null>(null);
 
   const userLanguage = profile?.primary_language ?? 'en';
 
-  const partner = useMemo(() => {
-    const convo = conversations.find((c) => c.id === conversationId);
-    if (!convo) return null;
-    const otherMember = convo.members.find((m) => m.user_id !== user?.id);
-    return otherMember?.profile ?? null;
-  }, [conversations, conversationId, user?.id]);
+  // 相手のプロフィールをDBから直接取得
+  useEffect(() => {
+    if (!conversationId || !user) return;
+
+    const fetchPartner = async () => {
+      const { data: members } = await supabase
+        .from('conversation_members')
+        .select('user_id, profile:profiles(*)')
+        .eq('conversation_id', conversationId);
+
+      const other = members?.find((m: any) => m.user_id !== user.id);
+      setPartner((other?.profile as unknown as Profile) ?? null);
+    };
+
+    fetchPartner();
+  }, [conversationId, user?.id]);
 
   useEffect(() => {
     setActiveConversation(conversationId ?? null);
@@ -98,9 +111,9 @@ export default function ChatRoomScreen() {
   const handleHeaderMenu = useCallback(() => {
     if (!partner) return;
 
-    const options = [t.block_user, t.report_user, t.cancel];
+    const options = [t.block_user, t.report_user, t.chat_delete, t.cancel];
     const destructiveButtonIndex = 0;
-    const cancelButtonIndex = 2;
+    const cancelButtonIndex = 3;
 
     if (Platform.OS === 'ios') {
       ActionSheetIOS.showActionSheetWithOptions(
@@ -108,12 +121,14 @@ export default function ChatRoomScreen() {
         (buttonIndex) => {
           if (buttonIndex === 0) handleBlockUser();
           if (buttonIndex === 1) handleReportUser();
+          if (buttonIndex === 2) handleDeleteChat();
         }
       );
     } else {
       Alert.alert('', '', [
         { text: t.block_user, style: 'destructive', onPress: handleBlockUser },
         { text: t.report_user, onPress: handleReportUser },
+        { text: t.chat_delete, onPress: handleDeleteChat },
         { text: t.cancel, style: 'cancel' },
       ]);
     }
@@ -133,6 +148,21 @@ export default function ChatRoomScreen() {
       },
     ]);
   }, [partner, blockUser, router, t]);
+
+  const handleDeleteChat = useCallback(() => {
+    if (!conversationId) return;
+    Alert.alert(t.chat_delete, t.chat_deleteConfirm, [
+      { text: t.cancel, style: 'cancel' },
+      {
+        text: t.chat_delete,
+        style: 'destructive',
+        onPress: async () => {
+          await deleteConversation(conversationId);
+          router.back();
+        },
+      },
+    ]);
+  }, [conversationId, deleteConversation, router, t]);
 
   const handleReportUser = useCallback(() => {
     if (!partner) return;

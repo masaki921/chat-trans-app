@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Session, User } from '@supabase/supabase-js';
 import { Profile } from '../types/database';
-import { supabase } from '../services/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../services/supabase';
 import { unregisterPushToken } from '../services/notifications';
 
 type AuthState = {
@@ -93,14 +93,36 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!user) return { error: new Error('Not authenticated') };
 
     try {
-      await unregisterPushToken(user.id);
-      const { error } = await supabase.functions.invoke('delete-account');
-      if (error) return { error: new Error(error.message) };
+      await unregisterPushToken(user.id).catch(() => {});
+
+      // セッションからJWTを取得
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData?.session?.access_token;
+      if (!accessToken) return { error: new Error('Session expired') };
+
+      // Authorization: ゲートウェイのverify_jwt通過用（必須）
+      // body.access_token: ゲートウェイがヘッダーを消した後、関数内で使用
+      const response = await fetch(`${supabaseUrl}/functions/v1/delete-account`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({ access_token: accessToken }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || data?.error) {
+        return { error: new Error(data?.error ?? `Failed to delete account (${response.status})`) };
+      }
+
       await supabase.auth.signOut();
       set({ session: null, user: null, profile: null });
       return { error: null };
     } catch (e: any) {
-      return { error: new Error(e.message ?? 'Failed to delete account') };
+      return { error: new Error(e?.message ?? 'Failed to delete account') };
     }
   },
 

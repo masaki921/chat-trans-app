@@ -3,7 +3,11 @@
     "allow": [
       "Bash(npx expo install:*)",
       "Bash(file:*)",
-      "Bash(echo:*)"
+      "Bash(echo:*)",
+      "Bash(python3 -c \" import sys, json for line in sys.stdin: try: obj = json.loads\\(line.strip\\(\\)\\) if obj.get\\(''type''\\) == ''assistant'' and ''message'' in obj: msg = obj[''message''] if isinstance\\(msg, dict\\) and ''content'' in msg: for block in msg[''content'']: if isinstance\\(block, dict\\) and block.get\\(''type''\\) == ''text'': print\\(''ASSISTANT:'', block[''text''][:500]\\) elif obj.get\\(''type''\\) == ''human'' and ''message'' in obj: msg = obj[''message''] if isinstance\\(msg, dict\\) and ''content'' in msg: for block in msg[''content'']: if isinstance\\(block, dict\\) and block.get\\(''type''\\) == ''text'': print\\(''USER:'', block[''text''][:500]\\) except: pass \")",
+      "Bash(python:*)",
+      "Bash(node -e:*)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

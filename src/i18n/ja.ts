@@ -58,6 +58,9 @@ export const ja = {
   chat_gallery: 'ライブラリから選択',
   chat_sendImage: '画像を送信',
 
+  chat_delete: 'チャットを削除',
+  chat_deleteConfirm: 'このチャットを削除しますか？会話から退出します。',
+
   // Message Actions
   message_unsend: '送信取り消し',
   message_saveImage: '端末に保存',

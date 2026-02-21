@@ -58,6 +58,9 @@ export const en = {
   chat_gallery: 'Choose from Library',
   chat_sendImage: 'Send Image',
 
+  chat_delete: 'Delete Chat',
+  chat_deleteConfirm: 'Are you sure you want to delete this chat? You will leave the conversation.',
+
   // Message Actions
   message_unsend: 'Unsend',
   message_saveImage: 'Save to Device',
