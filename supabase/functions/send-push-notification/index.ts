@@ -68,7 +68,7 @@ serve(async (req) => {
     // Expo Push APIに送信
     const messages = pushTokens.map((token: string) => ({
       to: token,
-      title: sender?.display_name ?? 'ChatTranslate',
+      title: sender?.display_name ?? 'Yappi',
       body,
       data: {
         conversationId: message.conversation_id,

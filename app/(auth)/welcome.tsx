@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors, typography, spacing } from '../../src/theme';
@@ -12,10 +12,12 @@ export default function WelcomeScreen() {
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
         <View style={styles.logoArea}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoText}>CT</Text>
-          </View>
-          <Text style={styles.appName}>ChatTranslate</Text>
+          <Image
+            source={require('../../assets/icon.png')}
+            style={styles.logoIcon}
+            accessibilityLabel="Yappi"
+          />
+          <Text style={styles.appName}>Yappi</Text>
           <Text style={styles.tagline}>{t.welcome_tagline}</Text>
         </View>
 
@@ -61,24 +63,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  logoText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.white,
+  logoIcon: {
+    width: 140,
+    height: 140,
+    borderRadius: 70,
+    marginBottom: spacing.lg,
   },
   appName: {
-    ...typography.heading,
-    fontSize: 28,
-    color: colors.text,
+    fontSize: 36,
+    fontWeight: '700',
+    color: colors.primary,
+    letterSpacing: -0.5,
     marginBottom: spacing.sm,
   },
   tagline: {

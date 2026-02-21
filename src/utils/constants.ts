@@ -1,4 +1,4 @@
-export const APP_NAME = 'ChatTranslate';
+export const APP_NAME = 'Yappi';
 
 export const BUBBLE_BORDER_RADIUS = 16;
 export const INPUT_BORDER_RADIUS = 24;
