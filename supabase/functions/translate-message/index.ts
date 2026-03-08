@@ -14,7 +14,6 @@ interface TranslateRequest {
   sourceLang: string;
   targetLanguages: string[];
   context?: { content: string; lang: string }[];
-  userId?: string;
 }
 
 interface TranslateResponse {
@@ -32,7 +31,32 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { text, sourceLang, targetLanguages, context, userId } =
+    // JWT認証: AuthorizationヘッダーからユーザーIDを取得
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: { user }, error: authError } = await supabase.auth.getUser(
+      authHeader.replace('Bearer ', '')
+    );
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const userId = user.id;
+
+    const { text, sourceLang, targetLanguages, context } =
       (await req.json()) as TranslateRequest;
 
     if (!text || !sourceLang || !targetLanguages?.length) {
@@ -42,58 +66,53 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 課金制限チェック
-    if (userId) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
+    // テキスト長制限（5000文字）
+    if (text.length > 5000) {
+      return new Response(
+        JSON.stringify({ error: 'Text too long', maxLength: 5000 }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
-      // サブスクリプション確認
-      const { data: subscription } = await supabase
-        .from('user_subscriptions')
-        .select('status, plan, created_at')
+    // 課金制限チェック
+    // サブスクリプション確認
+    const { data: subscription } = await supabase
+      .from('user_subscriptions')
+      .select('status, plan, created_at')
+      .eq('user_id', userId)
+      .single();
+
+    if (!subscription || subscription.status === 'free') {
+      // 無料ユーザー: 使用量チェック
+      const now = new Date();
+      const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const { data: usage } = await supabase
+        .from('translation_usage')
+        .select('count')
         .eq('user_id', userId)
+        .eq('month', currentMonth)
         .single();
 
-      if (!subscription || subscription.status === 'free') {
-        // 無料ユーザー: 使用量チェック
-        const now = new Date();
-        const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      // 初月ボーナス判定
+      const createdAt = subscription?.created_at ? new Date(subscription.created_at) : now;
+      const createdMonth = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
+      const isFirstMonth = currentMonth === createdMonth;
+      const limit = isFirstMonth ? FREE_FIRST_MONTH_BONUS : FREE_MONTHLY_LIMIT;
 
-        const { data: usage } = await supabase
-          .from('translation_usage')
-          .select('count')
-          .eq('user_id', userId)
-          .eq('month', currentMonth)
-          .single();
-
-        // 初月ボーナス判定
-        const createdAt = subscription?.created_at ? new Date(subscription.created_at) : now;
-        const createdMonth = `${createdAt.getFullYear()}-${String(createdAt.getMonth() + 1).padStart(2, '0')}`;
-        const isFirstMonth = currentMonth === createdMonth;
-        const limit = isFirstMonth ? FREE_FIRST_MONTH_BONUS : FREE_MONTHLY_LIMIT;
-
-        const currentCount = usage?.count ?? 0;
-        if (currentCount >= limit) {
-          return new Response(
-            JSON.stringify({ error: 'translation_limit_reached', limit, count: currentCount }),
-            { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // 使用量インクリメント
-        if (usage) {
-          await supabase
-            .from('translation_usage')
-            .update({ count: currentCount + 1 })
-            .eq('user_id', userId)
-            .eq('month', currentMonth);
-        } else {
-          await supabase
-            .from('translation_usage')
-            .insert({ user_id: userId, month: currentMonth, count: 1 });
-        }
+      const currentCount = usage?.count ?? 0;
+      if (currentCount >= limit) {
+        return new Response(
+          JSON.stringify({ error: 'translation_limit_reached', limit, count: currentCount }),
+          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
       }
+
+      // アトミックインクリメント（レースコンディション防止）
+      await supabase.rpc('increment_translation_usage', {
+        p_user_id: userId,
+        p_month: currentMonth,
+      });
     }
 
     // 翻訳先言語の名前マッピング

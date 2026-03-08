@@ -168,7 +168,7 @@ export function useMessages(conversationId: string) {
       }
 
       // 翻訳をリクエスト（非同期）
-      requestTranslation(messageId, trimmedContent, profile.primary_language, conversationId, user.id);
+      requestTranslation(messageId, trimmedContent, profile.primary_language, conversationId);
     },
     [user, profile, conversationId]
   );
@@ -290,8 +290,7 @@ async function requestTranslation(
   messageId: string,
   text: string,
   sourceLang: string,
-  conversationId: string,
-  userId?: string
+  conversationId: string
 ) {
   try {
     // 会話メンバーの言語を取得（translation_languageを優先）
@@ -325,7 +324,7 @@ async function requestTranslation(
       .map((m) => ({ content: m.content, lang: m.original_language })) ?? [];
 
     const { data, error } = await supabase.functions.invoke('translate-message', {
-      body: { text, sourceLang, targetLanguages: uniqueTargetLangs, context, userId },
+      body: { text, sourceLang, targetLanguages: uniqueTargetLangs, context },
     });
 
     if (error) {

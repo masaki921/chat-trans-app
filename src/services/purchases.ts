@@ -1,5 +1,5 @@
 import { Platform } from 'react-native';
-import Purchases, { PurchasesPackage, CustomerInfo, LOG_LEVEL } from 'react-native-purchases';
+import Purchases, { PurchasesPackage, CustomerInfo } from 'react-native-purchases';
 import RevenueCatUI from 'react-native-purchases-ui';
 import { REVENUECAT_API_KEY_IOS, REVENUECAT_API_KEY_ANDROID, ENTITLEMENT_ID } from '../utils/constants';
 
@@ -11,7 +11,6 @@ export async function configurePurchases(userId: string) {
   const apiKey = Platform.OS === 'ios' ? REVENUECAT_API_KEY_IOS : REVENUECAT_API_KEY_ANDROID;
 
   try {
-    Purchases.setLogLevel(LOG_LEVEL.DEBUG);
     await Purchases.configure({ apiKey, appUserID: userId });
     isConfigured = true;
   } catch (e) {

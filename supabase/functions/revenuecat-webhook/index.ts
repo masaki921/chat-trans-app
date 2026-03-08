@@ -13,9 +13,9 @@ Deno.serve(async (req) => {
   }
 
   try {
-    // Webhook認証
+    // Webhook認証（WEBHOOK_AUTH_KEY未設定時は全リクエスト拒否）
     const authHeader = req.headers.get('Authorization');
-    if (WEBHOOK_AUTH_KEY && authHeader !== `Bearer ${WEBHOOK_AUTH_KEY}`) {
+    if (!WEBHOOK_AUTH_KEY || authHeader !== `Bearer ${WEBHOOK_AUTH_KEY}`) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
