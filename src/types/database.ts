@@ -4,6 +4,7 @@ export type Profile = {
   avatar_url: string | null;
   status_message: string | null;
   primary_language: string;
+  translation_language: string;
   friend_code: string;
   push_token: string | null;
   created_at: string;

@@ -1,4 +1,5 @@
 import { useEffect, useCallback } from 'react';
+import { Alert } from 'react-native';
 import { supabase } from '../services/supabase';
 import { useChatStore } from '../stores/chatStore';
 import { useAuthStore } from '../stores/authStore';
@@ -167,7 +168,7 @@ export function useMessages(conversationId: string) {
       }
 
       // 翻訳をリクエスト（非同期）
-      requestTranslation(messageId, trimmedContent, profile.primary_language, conversationId);
+      requestTranslation(messageId, trimmedContent, profile.primary_language, conversationId, user.id);
     },
     [user, profile, conversationId]
   );
@@ -244,6 +245,27 @@ export function useMessages(conversationId: string) {
         console.error('Message delete error:', error);
       }
 
+      // 削除後の最新メッセージでプレビューを更新（チャット一覧に反映）
+      const { data: latest } = await supabase
+        .from('messages')
+        .select('content, type, created_at')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      await supabase
+        .from('conversations')
+        .update({
+          last_message_preview: latest
+            ? latest.type === 'image'
+              ? '📷 Photo'
+              : latest.content
+            : null,
+          last_message_at: latest ? latest.created_at : null,
+        })
+        .eq('id', conversationId);
+
       // 画像メッセージの場合、Storageからも削除
       if (mediaUrl) {
         try {
@@ -257,7 +279,7 @@ export function useMessages(conversationId: string) {
         }
       }
     },
-    []
+    [conversationId]
   );
 
   return { messages: currentMessages, sendMessage, sendImage, deleteMessage, refetch: fetchMessages };
@@ -268,28 +290,55 @@ async function requestTranslation(
   messageId: string,
   text: string,
   sourceLang: string,
-  conversationId: string
+  conversationId: string,
+  userId?: string
 ) {
   try {
-    // 会話メンバーの言語を取得
+    // 会話メンバーの言語を取得（translation_languageを優先）
     const { data: members } = await supabase
       .from('conversation_members')
-      .select('user_id, profile:profiles(primary_language)')
+      .select('user_id, profile:profiles(primary_language, translation_language)')
       .eq('conversation_id', conversationId);
 
     if (!members) return;
 
     const targetLanguages = members
-      .map((m: any) => m.profile?.primary_language)
+      .map((m: any) => m.profile?.translation_language ?? m.profile?.primary_language)
       .filter((lang: string) => lang && lang !== sourceLang);
 
     const uniqueTargetLangs = [...new Set(targetLanguages)] as string[];
 
     if (uniqueTargetLangs.length === 0) return;
 
-    const { data } = await supabase.functions.invoke('translate-message', {
-      body: { text, sourceLang, targetLanguages: uniqueTargetLangs },
+    // 直近5件のメッセージを文脈として取得
+    const { data: recentMessages } = await supabase
+      .from('messages')
+      .select('content, original_language')
+      .eq('conversation_id', conversationId)
+      .eq('type', 'text')
+      .neq('id', messageId)
+      .order('created_at', { ascending: false })
+      .limit(5);
+
+    const context = recentMessages
+      ?.reverse()
+      .map((m) => ({ content: m.content, lang: m.original_language })) ?? [];
+
+    const { data, error } = await supabase.functions.invoke('translate-message', {
+      body: { text, sourceLang, targetLanguages: uniqueTargetLangs, context, userId },
     });
+
+    if (error) {
+      // 課金制限エラーのハンドリング
+      const errorBody = error.message;
+      if (errorBody?.includes('translation_limit_reached')) {
+        // UIでの通知はconversationId画面側で行う
+        console.warn('Translation limit reached for user');
+        return;
+      }
+      console.error('Translation invoke error:', error);
+      return;
+    }
 
     if (data?.translations) {
       await supabase

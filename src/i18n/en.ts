@@ -57,6 +57,7 @@ export const en = {
   chat_camera: 'Take Photo',
   chat_gallery: 'Choose from Library',
   chat_sendImage: 'Send Image',
+  chat_startFailed: 'Could not start chat',
 
   chat_delete: 'Delete Chat',
   chat_deleteConfirm: 'Are you sure you want to delete this chat? You will leave the conversation.',
@@ -94,6 +95,7 @@ export const en = {
   profile_statusMessage: 'Status Message',
   profile_statusPlaceholder: 'Status message (optional)',
   profile_nameRequired: 'Please enter a display name',
+  profile_sendMessage: 'Send Message',
 
   // Language Settings
   language_title: 'Language',
@@ -148,6 +150,56 @@ export const en = {
   report_reason_other: 'Other',
   report_success: 'Report submitted. Thank you.',
   report_selectReason: 'Select a reason',
+
+  // Friend Notification
+  friend_request_accepted_title: 'Friend Request Accepted',
+  friend_request_accepted_body: '{name} accepted your friend request',
+
+  // Onboarding
+  onboarding_page1_title: 'Connect beyond\nlanguage barriers',
+  onboarding_page1_subtitle: 'Send in your language.\nThey read in theirs.',
+  onboarding_page2_title: 'AI understands\nthe conversation',
+  onboarding_page2_subtitle: 'Like having a personal interpreter.\nNatural, context-aware translation.',
+  onboarding_page3_title: 'Share your code,\nstart chatting',
+  onboarding_page3_subtitle: 'Connect with friends around the world\nwith just a friend code.',
+  onboarding_skip: 'Skip',
+
+  // Translation Language
+  settings_translationLanguage: 'Your Language',
+  settings_uiLanguage: 'App Language',
+  translation_language_title: 'Your Language',
+  translation_language_description: 'Messages you receive will be shown in this language',
+
+  // Subscription
+  settings_subscription: 'Subscription',
+  subscription_title: 'Yappi Basic',
+  subscription_free_plan: 'Free',
+  subscription_basic_plan: 'Basic',
+  subscription_monthly: 'Monthly',
+  subscription_yearly: 'Yearly',
+  subscription_price_monthly: '{price}/month',
+  subscription_price_yearly: '{price}/year',
+  subscription_price_yearly_monthly: '{price}/month',
+  subscription_recommended: 'Recommended',
+  subscription_yearly_equivalent: '~{price}/month',
+  subscription_yearly_savings: 'Save {percent}%',
+  subscription_monthly_equivalent: '{price}/year equivalent',
+  subscription_unlimited: 'Unlimited translations',
+  subscription_remaining: '{count} translations remaining this month',
+  subscription_remaining_bonus: '{count} translations remaining (first month bonus)',
+  subscription_limit_reached: 'Free translation limit reached',
+  subscription_upgrade: 'Upgrade to Basic',
+  subscription_send_without_translation: 'Send without translation',
+  subscription_restore: 'Restore Purchases',
+  subscription_current_plan: 'Current Plan',
+  subscription_manage: 'Manage Subscription',
+  subscription_daily_cost: 'About {price}/day',
+  subscription_features: 'Unlimited translations\nContext-aware AI translation',
+  subscription_hero_title: 'Unlimited Translations',
+  subscription_hero_subtitle: 'Chat freely without language barriers',
+  subscription_cancel_anytime: 'Cancel anytime',
+  subscription_cta_button: 'Get Basic',
+  subscription_savings_badge: '{percent}% OFF',
 
   // Privacy & Terms
   settings_privacyPolicy: 'Privacy Policy',

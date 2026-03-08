@@ -6,9 +6,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
-import { getLanguageName } from '../../../src/utils/languages';
+import { getLanguageName, TRANSLATION_LANGUAGES } from '../../../src/utils/languages';
 import { PRIVACY_POLICY_URL, TERMS_OF_SERVICE_URL, SUPPORT_URL } from '../../../src/utils/constants';
 import { Avatar } from '../../../src/components/shared/Avatar';
+import { ImageViewerModal } from '../../../src/components/chat/ImageViewerModal';
 import { useI18n } from '../../../src/i18n';
 
 type SettingsItem = {
@@ -23,6 +24,7 @@ export default function SettingsScreen() {
   const { profile, signOut, deleteAccount } = useAuthStore();
   const { t } = useI18n();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
   const handleSignOut = () => {
     Alert.alert(t.settings_logout, t.settings_logoutConfirm, [
@@ -65,14 +67,25 @@ export default function SettingsScreen() {
     },
     {
       icon: 'language-outline',
-      label: t.settings_language,
+      label: t.settings_uiLanguage,
       value: profile ? getLanguageName(profile.primary_language) : '',
       onPress: () => router.push('/(tabs)/settings/language'),
+    },
+    {
+      icon: 'globe-outline',
+      label: t.settings_translationLanguage,
+      value: profile ? getLanguageName(profile.translation_language ?? profile.primary_language) : '',
+      onPress: () => router.push('/(tabs)/settings/translation-language'),
     },
     {
       icon: 'people-outline',
       label: t.settings_friends,
       onPress: () => router.push('/(tabs)/settings/friends'),
+    },
+    {
+      icon: 'card-outline',
+      label: t.settings_subscription,
+      onPress: () => router.push('/(tabs)/settings/subscription'),
     },
     {
       icon: 'remove-circle-outline',
@@ -112,6 +125,7 @@ export default function SettingsScreen() {
             uri={profile?.avatar_url}
             name={profile?.display_name ?? '?'}
             size={56}
+            onPress={profile?.avatar_url ? () => setImageViewerVisible(true) : undefined}
           />
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>
@@ -213,6 +227,12 @@ export default function SettingsScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      <ImageViewerModal
+        uri={profile?.avatar_url ?? null}
+        visible={imageViewerVisible}
+        onClose={() => setImageViewerVisible(false)}
+      />
     </SafeAreaView>
   );
 }

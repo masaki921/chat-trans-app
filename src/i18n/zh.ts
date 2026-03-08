@@ -57,6 +57,7 @@ export const zh = {
   chat_camera: '拍照',
   chat_gallery: '从相册选择',
   chat_sendImage: '发送图片',
+  chat_startFailed: '无法开始聊天',
 
   chat_delete: '删除聊天',
   chat_deleteConfirm: '确定要删除此聊天吗？您将退出对话。',
@@ -94,6 +95,7 @@ export const zh = {
   profile_statusMessage: '状态消息',
   profile_statusPlaceholder: '状态消息（选填）',
   profile_nameRequired: '请输入显示名称',
+  profile_sendMessage: '发消息',
 
   // Language Settings
   language_title: '语言设置',
@@ -148,6 +150,56 @@ export const zh = {
   report_reason_other: '其他',
   report_success: '已提交举报，感谢您的反馈。',
   report_selectReason: '选择原因',
+
+  // Friend Notification
+  friend_request_accepted_title: '好友请求已接受',
+  friend_request_accepted_body: '{name}接受了你的好友请求',
+
+  // Onboarding
+  onboarding_page1_title: '跨越语言障碍，\n连接彼此',
+  onboarding_page1_subtitle: '用你的语言发送。\n对方用他们的语言阅读。',
+  onboarding_page2_title: 'AI理解对话\n上下文翻译',
+  onboarding_page2_subtitle: '如同拥有私人翻译。\n自然、智能的翻译体验。',
+  onboarding_page3_title: '分享好友码，\n立即开始聊天',
+  onboarding_page3_subtitle: '只需分享好友码，\n即可与全球好友相连。',
+  onboarding_skip: '跳过',
+
+  // Translation Language
+  settings_translationLanguage: '你的语言',
+  settings_uiLanguage: '应用语言',
+  translation_language_title: '你的语言',
+  translation_language_description: '收到的消息将以此语言显示',
+
+  // Subscription
+  settings_subscription: '订阅',
+  subscription_title: 'Yappi Basic',
+  subscription_free_plan: '免费',
+  subscription_basic_plan: 'Basic',
+  subscription_monthly: '月付',
+  subscription_yearly: '年付',
+  subscription_price_monthly: '{price}/月',
+  subscription_price_yearly: '{price}/年',
+  subscription_price_yearly_monthly: '{price}/月',
+  subscription_recommended: '推荐',
+  subscription_yearly_equivalent: '约{price}/月',
+  subscription_yearly_savings: '节省{percent}%',
+  subscription_monthly_equivalent: '年付{price}等值',
+  subscription_unlimited: '无限翻译',
+  subscription_remaining: '本月剩余{count}次翻译',
+  subscription_remaining_bonus: '剩余{count}次翻译（首月奖励）',
+  subscription_limit_reached: '免费翻译次数已用完',
+  subscription_upgrade: '升级到Basic',
+  subscription_send_without_translation: '不翻译直接发送',
+  subscription_restore: '恢复购买',
+  subscription_current_plan: '当前方案',
+  subscription_manage: '管理订阅',
+  subscription_daily_cost: '每天约{price}',
+  subscription_features: '无限翻译\n上下文AI翻译',
+  subscription_hero_title: '无限翻译',
+  subscription_hero_subtitle: '无障碍沟通，自由畅聊',
+  subscription_cancel_anytime: '随时可取消',
+  subscription_cta_button: '开始使用Basic',
+  subscription_savings_badge: '省{percent}%',
 
   // Privacy & Terms
   settings_privacyPolicy: '隐私政策',

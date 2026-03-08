@@ -1,16 +1,32 @@
-import { View, Text, StyleSheet, Pressable, FlatList } from 'react-native';
+import { useCallback, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, FlatList, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFriendships } from '../../../src/hooks/useFriendships';
 import { Avatar } from '../../../src/components/shared/Avatar';
+import { UserProfileModal } from '../../../src/components/shared/UserProfileModal';
 import { colors, typography, spacing } from '../../../src/theme';
 import { useI18n } from '../../../src/i18n';
+import type { Profile } from '../../../src/types/database';
 
 export default function FriendManageScreen() {
   const router = useRouter();
-  const { friends } = useFriendships();
+  const { friends, startConversation } = useFriendships();
   const { t } = useI18n();
+  const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
+
+  const handlePressFriend = useCallback(
+    async (friendId: string) => {
+      const conversationId = await startConversation(friendId);
+      if (conversationId) {
+        router.push(`/(tabs)/chats/${conversationId}`);
+      } else {
+        Alert.alert(t.error ?? 'Error', t.chat_startFailed ?? 'チャットを開始できませんでした');
+      }
+    },
+    [startConversation, router, t]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -37,19 +53,29 @@ export default function FriendManageScreen() {
             </Text>
           }
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <Pressable
+              style={styles.row}
+              onPress={() => handlePressFriend(item.friend.id)}
+            >
               <Avatar
                 uri={item.friend.avatar_url}
                 name={item.friend.display_name}
                 size={44}
+                onPress={() => setSelectedProfile(item.friend as Profile)}
               />
               <View style={styles.rowInfo}>
                 <Text style={styles.rowName}>{item.friend.display_name}</Text>
               </View>
-            </View>
+            </Pressable>
           )}
         />
       )}
+
+      <UserProfileModal
+        profile={selectedProfile}
+        visible={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+      />
     </SafeAreaView>
   );
 }

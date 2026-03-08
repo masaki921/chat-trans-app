@@ -6,12 +6,13 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StyleSheet } from 'react-native';
 import { useAuthStore } from '../src/stores/authStore';
 import { useNotifications } from '../src/hooks/useNotifications';
+import { configurePurchases } from '../src/services/purchases';
 import { colors } from '../src/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const { initialized, session, initialize } = useAuthStore();
+  const { initialized, session, user, initialize } = useAuthStore();
   const segments = useSegments();
   const router = useRouter();
 
@@ -20,6 +21,13 @@ export default function RootLayout() {
   useEffect(() => {
     initialize();
   }, []);
+
+  // RevenueCat初期化
+  useEffect(() => {
+    if (user?.id) {
+      configurePurchases(user.id).catch(console.error);
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     if (!initialized) return;

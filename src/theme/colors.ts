@@ -11,4 +11,7 @@ export const colors = {
   white: '#FFFFFF',
   error: '#E8503A',
   success: '#2EAC6A',
+  ctaStart: '#E8503A',
+  ctaEnd: '#F2845C',
+  savingsBadge: '#E8503A',
 } as const;

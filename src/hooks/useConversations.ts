@@ -128,6 +128,16 @@ export function useConversations() {
     async (conversationId: string) => {
       if (!user) return;
 
+      // 先に残りメンバー数を確認（自分がまだメンバーの間にRLSでアクセス可能）
+      const { data: allMembers } = await supabase
+        .from('conversation_members')
+        .select('user_id')
+        .eq('conversation_id', conversationId);
+
+      const otherMemberCount = (allMembers ?? []).filter(
+        (m) => m.user_id !== user.id
+      ).length;
+
       // 自分をメンバーから削除
       await supabase
         .from('conversation_members')
@@ -135,13 +145,8 @@ export function useConversations() {
         .eq('conversation_id', conversationId)
         .eq('user_id', user.id);
 
-      // 残りメンバーがいなければ会話自体を削除
-      const { data: remaining } = await supabase
-        .from('conversation_members')
-        .select('user_id')
-        .eq('conversation_id', conversationId);
-
-      if (!remaining || remaining.length === 0) {
+      // 他のメンバーがいなければ会話自体を削除
+      if (otherMemberCount === 0) {
         await supabase
           .from('conversations')
           .delete()

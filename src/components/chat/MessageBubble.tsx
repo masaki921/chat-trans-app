@@ -2,7 +2,7 @@ import { View, Text, StyleSheet, Pressable, ActionSheetIOS, Platform, Alert } fr
 import { Image } from 'expo-image';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import { MessageWithSender } from '../../types/chat';
 import { colors, typography, spacing } from '../../theme';
@@ -32,7 +32,8 @@ async function saveImageToDevice(uri: string, successMsg: string, errorMsg: stri
     await MediaLibrary.saveToLibraryAsync(localUri);
     await FileSystem.deleteAsync(localUri, { idempotent: true });
     Alert.alert('', successMsg);
-  } catch {
+  } catch (e) {
+    console.error('Save image error:', e);
     Alert.alert('', errorMsg);
   }
 }
@@ -93,6 +94,12 @@ export function MessageBubble({ message, isOwn, userLanguage, onImagePress, onUn
         ? `${translatedText}\n${message.content}`
         : message.content;
 
+      const doCopy = () => {
+        Clipboard.setStringAsync(copyText).then(() => {
+          Alert.alert('', t.copy + ' ✓');
+        });
+      };
+
       if (isOwn) {
         const options = [t.copy, t.message_unsend, t.cancel];
         const destructiveButtonIndex = 1;
@@ -102,13 +109,13 @@ export function MessageBubble({ message, isOwn, userLanguage, onImagePress, onUn
           ActionSheetIOS.showActionSheetWithOptions(
             { options, destructiveButtonIndex, cancelButtonIndex },
             (buttonIndex) => {
-              if (buttonIndex === 0) Clipboard.setStringAsync(copyText);
+              if (buttonIndex === 0) doCopy();
               if (buttonIndex === 1) onUnsend?.(message.id);
             }
           );
         } else {
           Alert.alert('', '', [
-            { text: t.copy, onPress: () => Clipboard.setStringAsync(copyText) },
+            { text: t.copy, onPress: doCopy },
             { text: t.message_unsend, style: 'destructive', onPress: () => onUnsend?.(message.id) },
             { text: t.cancel, style: 'cancel' },
           ]);
@@ -121,13 +128,13 @@ export function MessageBubble({ message, isOwn, userLanguage, onImagePress, onUn
           ActionSheetIOS.showActionSheetWithOptions(
             { options, cancelButtonIndex },
             (buttonIndex) => {
-              if (buttonIndex === 0) Clipboard.setStringAsync(copyText);
+              if (buttonIndex === 0) doCopy();
               if (buttonIndex === 1) onReport?.(message.id);
             }
           );
         } else {
           Alert.alert('', '', [
-            { text: t.copy, onPress: () => Clipboard.setStringAsync(copyText) },
+            { text: t.copy, onPress: doCopy },
             { text: t.report_message, onPress: () => onReport?.(message.id) },
             { text: t.cancel, style: 'cancel' },
           ]);

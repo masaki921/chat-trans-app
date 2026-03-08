@@ -7,9 +7,11 @@ import {
   FlatList,
   Modal,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '../shared/Avatar';
+import { UserProfileModal } from '../shared/UserProfileModal';
 import { colors, typography, spacing } from '../../theme';
 import { useI18n } from '../../i18n';
 import type { Profile, Friendship } from '../../types/database';
@@ -36,6 +38,7 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
   ({ onStartChat, onOpenAddFriend, friends, pendingRequests, acceptRequest, rejectRequest, startConversation, refetch }, ref) => {
     const [visible, setVisible] = useState(false);
     const [processingId, setProcessingId] = useState<string | null>(null);
+    const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
     const { t } = useI18n();
 
     useImperativeHandle(ref, () => ({
@@ -52,9 +55,11 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
         if (conversationId) {
           setVisible(false);
           onStartChat(conversationId);
+        } else {
+          Alert.alert(t.error ?? 'Error', t.chat_startFailed ?? 'チャットを開始できませんでした');
         }
       },
-      [startConversation, onStartChat]
+      [startConversation, onStartChat, t]
     );
 
     const handleAcceptAndChat = useCallback(
@@ -68,11 +73,13 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
             setProcessingId(null);
             onStartChat(conversationId);
             return;
+          } else {
+            Alert.alert(t.error ?? 'Error', t.chat_startFailed ?? 'チャットを開始できませんでした');
           }
         }
         setProcessingId(null);
       },
-      [acceptRequest, startConversation, onStartChat]
+      [acceptRequest, startConversation, onStartChat, t]
     );
 
     const handleReject = useCallback(
@@ -84,12 +91,18 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
       [rejectRequest]
     );
 
+    const seenIds = new Set<string>();
     const listData = [
       ...pendingRequests.map((p) => ({ ...p, _type: 'pending' as const })),
       ...friends.map((f) => ({ ...f, _type: 'friend' as const })),
-    ];
+    ].filter((item) => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
 
     return (
+      <>
       <Modal visible={visible} animationType="slide" transparent>
         <View style={styles.overlay}>
           <Pressable style={styles.backdrop} onPress={() => setVisible(false)} />
@@ -130,6 +143,7 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
                         uri={item.friend.avatar_url}
                         name={item.friend.display_name}
                         size={40}
+                        onPress={() => setSelectedProfile(item.friend as Profile)}
                       />
                       <View style={styles.pendingInfo}>
                         <Text style={styles.friendName}>
@@ -168,6 +182,7 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
                       uri={item.friend.avatar_url}
                       name={item.friend.display_name}
                       size={40}
+                      onPress={() => setSelectedProfile(item.friend as Profile)}
                     />
                     <Text style={styles.friendName}>
                       {item.friend.display_name}
@@ -184,6 +199,13 @@ export const NewChatSheet = forwardRef<NewChatSheetRef, Props>(
           </View>
         </View>
       </Modal>
+
+      <UserProfileModal
+        profile={selectedProfile}
+        visible={!!selectedProfile}
+        onClose={() => setSelectedProfile(null)}
+      />
+    </>
     );
   }
 );

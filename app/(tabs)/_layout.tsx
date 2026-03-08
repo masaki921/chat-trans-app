@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { View, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/theme';
@@ -11,6 +11,7 @@ export default function TabsLayout() {
   const { t } = useI18n();
   const user = useAuthStore((s) => s.user);
   const [pendingCount, setPendingCount] = useState(0);
+  const pathname = usePathname();
 
   const fetchPendingCount = useCallback(async () => {
     if (!user) return;
@@ -22,9 +23,10 @@ export default function TabsLayout() {
     setPendingCount(count ?? 0);
   }, [user]);
 
+  // 画面遷移のたびに再取得（承認後に即ドットが消えるように）
   useEffect(() => {
     fetchPendingCount();
-  }, [fetchPendingCount]);
+  }, [fetchPendingCount, pathname]);
 
   // Realtime: friendshipsテーブルの変更を監視してバッジ更新
   useEffect(() => {

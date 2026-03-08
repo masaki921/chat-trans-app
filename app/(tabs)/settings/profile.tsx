@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../src/stores/authStore';
 import { colors, typography, spacing } from '../../../src/theme';
 import { Avatar } from '../../../src/components/shared/Avatar';
+import { ImageViewerModal } from '../../../src/components/chat/ImageViewerModal';
 import { useAvatarPicker } from '../../../src/hooks/useAvatarPicker';
 import { useI18n } from '../../../src/i18n';
 
@@ -26,6 +27,7 @@ export default function ProfileScreen() {
     profile?.status_message ?? ''
   );
   const { avatarUri, isUploading, showPicker } = useAvatarPicker();
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
   const handleSave = async () => {
     if (!displayName.trim()) {
@@ -61,7 +63,11 @@ export default function ProfileScreen() {
 
       <View style={styles.content}>
         <View style={styles.avatarArea}>
-          <Pressable onPress={showPicker} style={styles.avatarPressable}>
+          <Pressable
+            onPress={showPicker}
+            onLongPress={currentAvatarUri ? () => setImageViewerVisible(true) : undefined}
+            style={styles.avatarPressable}
+          >
             <Avatar
               uri={currentAvatarUri}
               name={displayName}
@@ -98,6 +104,12 @@ export default function ProfileScreen() {
           />
         </View>
       </View>
+
+      <ImageViewerModal
+        uri={currentAvatarUri ?? null}
+        visible={imageViewerVisible}
+        onClose={() => setImageViewerVisible(false)}
+      />
     </SafeAreaView>
   );
 }

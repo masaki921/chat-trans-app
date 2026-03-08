@@ -155,15 +155,32 @@ export function useFriendships() {
   // フレンドリクエスト承認
   const acceptRequest = useCallback(
     async (friendshipId: string) => {
+      // 承認前にリクエスト情報を取得（通知用）
+      const { data: friendship } = await supabase
+        .from('friendships')
+        .select('requester_id')
+        .eq('id', friendshipId)
+        .single();
+
       const { error } = await supabase
         .from('friendships')
         .update({ status: 'accepted' })
         .eq('id', friendshipId);
 
-      if (!error) fetchFriends();
+      if (!error) {
+        fetchFriends();
+        // 申請者に通知を送信（非同期、エラー無視）
+        if (friendship?.requester_id && user) {
+          supabase.functions
+            .invoke('send-friend-notification', {
+              body: { accepterId: user.id, requesterId: friendship.requester_id },
+            })
+            .catch(() => {});
+        }
+      }
       return { error: error ? new Error(error.message) : null };
     },
-    [fetchFriends]
+    [fetchFriends, user]
   );
 
   // フレンドリクエスト拒否
@@ -226,12 +243,12 @@ export function useFriendships() {
     [user, fetchFriends]
   );
 
-  // ブロック解除
+  // ブロック解除（acceptedに戻してフレンド一覧に再表示）
   const unblockUser = useCallback(
     async (friendshipId: string) => {
       const { error } = await supabase
         .from('friendships')
-        .delete()
+        .update({ status: 'accepted' })
         .eq('id', friendshipId);
 
       if (!error) fetchFriends();
@@ -305,7 +322,10 @@ export function useFriendships() {
           .from('conversations')
           .insert({ id: conversationId, type: 'direct', created_by: user.id });
 
-        if (error) return null;
+        if (error) {
+          console.warn('[startConversation] conversation insert failed:', error.message);
+          return null;
+        }
 
         // メンバー追加
         const { error: memberError } = await supabase
@@ -315,7 +335,10 @@ export function useFriendships() {
             { conversation_id: conversationId, user_id: friendId, role: 'member' },
           ]);
 
-        if (memberError) return null;
+        if (memberError) {
+          console.warn('[startConversation] members insert failed:', memberError.message);
+          return null;
+        }
 
         return conversationId;
       } finally {

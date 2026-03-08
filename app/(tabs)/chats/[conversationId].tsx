@@ -23,7 +23,10 @@ import { MessageBubble } from '../../../src/components/chat/MessageBubble';
 import { ChatInputBar } from '../../../src/components/chat/ChatInputBar';
 import { Avatar } from '../../../src/components/shared/Avatar';
 import { ImageViewerModal } from '../../../src/components/chat/ImageViewerModal';
+import { ImagePickerSheet } from '../../../src/components/chat/ImagePickerSheet';
+import { UserProfileModal } from '../../../src/components/shared/UserProfileModal';
 import { pickImage } from '../../../src/utils/imageUpload';
+import * as Notifications from 'expo-notifications';
 import { setActiveConversation } from '../../../src/hooks/useNotifications';
 import { colors, typography, spacing } from '../../../src/theme';
 import { useI18n } from '../../../src/i18n';
@@ -39,9 +42,11 @@ export default function ChatRoomScreen() {
   const flatListRef = useRef<FlatList>(null);
 
   const [viewerImage, setViewerImage] = useState<string | null>(null);
+  const [pickerVisible, setPickerVisible] = useState(false);
   const [partner, setPartner] = useState<Profile | null>(null);
+  const [profileVisible, setProfileVisible] = useState(false);
 
-  const userLanguage = profile?.primary_language ?? 'en';
+  const userLanguage = profile?.translation_language ?? profile?.primary_language ?? 'en';
 
   // 相手のプロフィールをDBから直接取得
   useEffect(() => {
@@ -62,6 +67,8 @@ export default function ChatRoomScreen() {
 
   useEffect(() => {
     setActiveConversation(conversationId ?? null);
+    // ロック画面に残っている通知もdismiss
+    Notifications.dismissAllNotificationsAsync();
     return () => setActiveConversation(null);
   }, [conversationId]);
 
@@ -75,16 +82,14 @@ export default function ChatRoomScreen() {
       ActionSheetIOS.showActionSheetWithOptions(
         { options, cancelButtonIndex },
         async (buttonIndex) => {
-          let source: 'camera' | 'gallery' | null = null;
-          if (buttonIndex === 0) source = 'camera';
-          if (buttonIndex === 1) source = 'gallery';
-          if (!source) return;
-
-          const uri = await pickImage(source, {
-            allowsEditing: false,
-            quality: 0.7,
-          });
-          if (uri) sendImage(uri);
+          if (buttonIndex === 0) {
+            // カメラ → 撮影して即送信
+            const uri = await pickImage('camera', { allowsEditing: false, quality: 0.7 });
+            if (uri) sendImage(uri);
+          } else if (buttonIndex === 1) {
+            // ギャラリー → グリッドピッカーを開く
+            setPickerVisible(true);
+          }
         }
       );
     } else {
@@ -98,10 +103,7 @@ export default function ChatRoomScreen() {
         },
         {
           text: t.chat_gallery,
-          onPress: async () => {
-            const uri = await pickImage('gallery', { allowsEditing: false, quality: 0.7 });
-            if (uri) sendImage(uri);
-          },
+          onPress: () => setPickerVisible(true),
         },
         { text: t.cancel, style: 'cancel' },
       ]);
@@ -256,6 +258,7 @@ export default function ChatRoomScreen() {
             uri={partner?.avatar_url}
             name={partner?.display_name ?? ''}
             size={32}
+            onPress={partner ? () => setProfileVisible(true) : undefined}
           />
           <View style={styles.headerInfo}>
             <Text style={styles.headerName}>
@@ -312,6 +315,20 @@ export default function ChatRoomScreen() {
         uri={viewerImage}
         visible={!!viewerImage}
         onClose={() => setViewerImage(null)}
+      />
+
+      {/* 画像ピッカー（複数選択） */}
+      <ImagePickerSheet
+        visible={pickerVisible}
+        onSend={(uris) => uris.forEach((uri) => sendImage(uri))}
+        onClose={() => setPickerVisible(false)}
+      />
+
+      {/* 相手のプロフィールモーダル */}
+      <UserProfileModal
+        profile={partner}
+        visible={profileVisible}
+        onClose={() => setProfileVisible(false)}
       />
     </SafeAreaView>
   );
